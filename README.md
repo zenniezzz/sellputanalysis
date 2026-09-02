@@ -14,8 +14,9 @@ A daily screener for put-selling candidates. Full spec:
 | `@pss/observability` — Sentry-if-DSN error reporting; healthchecks.io-style heartbeat | ✅ |
 | `@pss/screener-cli` — `cli:one-name`, `cli:run-snapshot` (+`--as-of`), `cli:greek-xcheck` | ✅ |
 | `@pss/api` — framework-free read server: `GET /`, `/api/snapshots/latest`, `/:id` | ✅ walking skeleton |
-| CI | `ci.yml` (typecheck + 137 tests) · `nightly.yml` (live greek cross-check) |
-| ORATS 1-year IV backfill purchase · Next.js app + cloud deploy | ⏳ M2 (data purchase) / M3 |
+| CI | `ci.yml` (typecheck + 150 tests) · `nightly.yml` (live greek cross-check) |
+| ORATS 1-year IV backfill purchase | ⏳ M2 (data purchase — importer ready) |
+| Next.js Candidates table + filters + accounts | ⏭ M3 (Node 20 in place) |
 
 Verified on live CBOE data (10 names): `status=good`, 2,840 contracts priced,
 0 IV failures, greek cross-check **1.11%** median abs (SLO < 2%), 33 candidates
@@ -90,9 +91,9 @@ Set `DATABASE_URL` to route the store and API through Postgres instead of
   (plan §3.1); leveraged/inverse ETPs filtered out, names ranked by in-window
   put volume.
 - **Cloud deploy:** the `@pss/api` read server is the walking skeleton; the
-  Next.js app + real deploy come with M3 (needs Node 20).
+  Next.js app + real deploy come with M3.
 
 ## Node
 
-`.nvmrc` pins 18.18.2 (the box's version). Bump to 20 LTS before the Next.js app
-lands in M1.
+`.nvmrc` pins **20** (LTS "iron"). `nvm use` in the repo root. Node 20 is
+required (`engines`); CI runs on 20.
