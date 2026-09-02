@@ -1,0 +1,27 @@
+{
+  "name": "put-sell-screener",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Daily put-selling options screener — see put-sell-screener-plan.md",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -p tsconfig.json",
+    "cli:one-name": "tsx apps/screener-cli/src/one-name.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.12",
+    "black-scholes": "^1.1.0",
+    "tsx": "^4.16.5",
+    "typescript": "^5.5.4",
+    "vitest": "^1.6.0"
+  },
+  "engines": {
+    "node": ">=18.18"
+  }
+}

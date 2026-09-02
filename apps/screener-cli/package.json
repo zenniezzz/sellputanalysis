@@ -1,0 +1,13 @@
+{
+  "name": "@pss/screener-cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "pss-one-name": "./src/one-name.ts"
+  },
+  "dependencies": {
+    "@pss/market-data": "*",
+    "@pss/options": "*"
+  }
+}
