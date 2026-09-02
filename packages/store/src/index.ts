@@ -10,3 +10,11 @@ export {
 } from './iv-history.js';
 export { PgIvHistoryStore } from './pg/iv-history.js';
 export { parseOratsIvHistoryCsv, normalizeDate } from './iv-backfill.js';
+export {
+  JsonMetricReferenceStore,
+  rollUp,
+  aggregate,
+  type MetricReferenceStore,
+  type DailyMetricAgg,
+} from './metric-reference.js';
+export { PgMetricReferenceStore } from './pg/metric-reference.js';

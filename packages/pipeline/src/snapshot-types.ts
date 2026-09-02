@@ -155,7 +155,9 @@ export interface IvSample {
   source: IvSampleSource;
 }
 
-/** runSnapshot output: the persisted Snapshot plus the day's IV-history samples. */
+/** runSnapshot output: the persisted Snapshot plus the day's history samples. */
 export interface RunSnapshotResult extends Snapshot {
   ivSamples: IvSample[];
+  /** Candidate metric values by score-metric name, for the reference store. */
+  metricSamples: Record<string, number[]>;
 }

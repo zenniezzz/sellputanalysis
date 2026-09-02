@@ -33,6 +33,19 @@ export {
   type ExpirationAtmVar,
 } from './surface.js';
 export {
+  computeScores,
+  scoreColorPosition,
+  SCORE_PRESETS,
+  SCORE_METRICS,
+  type ScoreMetric,
+  type ScoreInputRow,
+  type ScoreConfig,
+  type ScoredRow,
+  type ReferenceStats,
+  type MetricStats,
+  type ComputeScoresResult,
+} from './score.js';
+export {
   fillModel,
   cleanQuoteReject,
   moneynessPct,

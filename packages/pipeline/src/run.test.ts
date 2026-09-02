@@ -130,6 +130,34 @@ describe('runSnapshot', () => {
     }
   });
 
+  it('scores every priced row and orders candidates by score', async () => {
+    const snap = await runSnapshot(config());
+    expect(snap.meta.scoreBasis).toBe('cross_sectional'); // no reference supplied
+    const candidates = snap.rows.filter((r) => r.isCandidate);
+    for (const r of candidates) {
+      expect(r.score).not.toBeNull();
+      expect(r.scoreComponents).not.toBeNull();
+      expect(r.scoreComponents).toHaveProperty('penalty');
+    }
+    // rows are sorted by score desc
+    const scores = candidates.map((r) => r.score!);
+    expect(scores).toEqual([...scores].sort((a, b) => b - a));
+    // unpriced (quote-gated / iv-failed) rows carry no score
+    for (const r of snap.rows.filter((r) => r.iv == null)) expect(r.score).toBeNull();
+  });
+
+  it('scoreBasis follows the supplied reference depth', async () => {
+    const full = Object.fromEntries(
+      ['evToMaxloss', 'annRoc', 'ivVsFitted', 'ivRank', 'spreadPct', 'deltaFromCenter'].map((m) => [
+        m,
+        { mean: m === 'ivRank' ? 45 : 0.1, stddev: m === 'ivRank' ? 18 : 0.05, nDays: 400 },
+      ]),
+    );
+    const snap = await runSnapshot(config({ metricReference: async () => full }));
+    expect(snap.meta.scoreBasis).toBe('reference');
+    expect(snap.rows.filter((r) => r.isCandidate).every((r) => r.score != null)).toBe(true);
+  });
+
   it('emits one σ30 history sample per priced name', async () => {
     const snap = await runSnapshot(config());
     const symbols = new Set(snap.ivSamples.map((s) => s.symbol));

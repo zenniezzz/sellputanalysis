@@ -9,6 +9,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
+    "@pss/options": "*",
     "@pss/pipeline": "*"
   }
 }

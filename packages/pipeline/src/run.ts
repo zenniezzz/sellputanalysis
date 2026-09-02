@@ -7,7 +7,14 @@
  */
 
 import { interpolateZeroRate, type MarketData, type OptionQuote, type RatesSource, type Underlying } from '@pss/market-data';
-import type { IvHistoryPoint } from '@pss/options';
+import {
+  computeScores,
+  SCORE_PRESETS,
+  type IvHistoryPoint,
+  type ReferenceStats,
+  type ScoreInputRow,
+  type ScoreMetric,
+} from '@pss/options';
 import { randomUUID } from 'node:crypto';
 import { universeHash } from './hash.js';
 import { mapPool } from './pool.js';
@@ -34,6 +41,9 @@ export interface RunSnapshotConfig {
   rates: RatesSource;
   /** Accrued 30-day ATM IV history for a symbol (ascending by date). Enables real IV rank. */
   ivHistory?: (symbol: string) => Promise<IvHistoryPoint[]>;
+  /** Rolling reference distributions for the composite score's z_ref. */
+  metricReference?: (asOf: string) => Promise<ReferenceStats>;
+  scorePreset?: 'conservative' | 'balanced' | 'aggressive';
   now?: Date;
   runType?: SnapshotMeta['runType'];
   maxNames?: number;
@@ -218,7 +228,39 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapsho
     log({ symbol: name.symbol, stage: 'D', outcome: 'ok', durationMs: Date.now() - dStart });
   }
 
-  rows.sort((a, b) => (b.evToMaxloss ?? -Infinity) - (a.evToMaxloss ?? -Infinity));
+  // ---- Stage G: composite score ------------------------------------------
+  const scoreConfig = SCORE_PRESETS[config.scorePreset ?? 'balanced'];
+  const reference = config.metricReference
+    ? await config.metricReference(now.toISOString().slice(0, 10))
+    : {};
+  const scoreInputs: ScoreInputRow[] = rows.map((r) => ({
+    priced: r.iv != null,
+    isCandidate: r.isCandidate,
+    evToMaxloss: r.evToMaxloss,
+    annRoc: r.annRoc,
+    ivVsFitted: r.ivVsFitted,
+    ivRank: r.ivRank,
+    spreadPct: r.spreadPct,
+    delta: r.delta,
+    caution: {
+      borrow: r.modelCaution.borrow,
+      dividend: r.modelCaution.dividend,
+      earningsBeforeExpiry: r.modelCaution.earningsBeforeExpiry,
+      ivRankProxy: r.modelCaution.ivRankProxy,
+    },
+  }));
+  const scored = computeScores(scoreInputs, reference, scoreConfig);
+  rows.forEach((r, i) => {
+    r.score = scored.rows[i]!.score;
+    r.scoreComponents = scored.rows[i]!.components;
+  });
+  const metricSamples = scored.metricSamples as Partial<Record<ScoreMetric, number[]>>;
+
+  rows.sort(
+    (a, b) =>
+      (b.score ?? -Infinity) - (a.score ?? -Infinity) ||
+      (b.evToMaxloss ?? -Infinity) - (a.evToMaxloss ?? -Infinity),
+  );
   const candidatesFound = rows.filter((r) => r.isCandidate).length;
 
   // ---- Stage H: assemble --------------------------------------------------
@@ -238,14 +280,14 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapsho
     runType,
     status,
     dataCompleteness,
-    scoreBasis: 'cross_sectional',
+    scoreBasis: scored.basis,
     metricSchemaVersion: METRIC_SCHEMA_VERSION,
     ratesAsOf: now.toISOString().slice(0, 10),
     universeHash: universeHash(selected.map((n) => n.symbol)),
     provider: config.provider ?? 'cboe-delayed',
     displayDelayed: config.displayDelayed ?? true,
     filterDefaults: gate,
-    notes: 'M2: smile-fitted σ30 + skew + LOO residual; IV rank from history or HV proxy; composite score deferred to M2.5; q=0.',
+    notes: `M2.5: smile-fitted σ30/skew/residual; IV rank from history or HV proxy; composite score (${config.scorePreset ?? 'balanced'}, ${scored.basis}); q=0.`,
   };
 
   const run: IngestionRun = {
@@ -261,7 +303,7 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapsho
     status,
   };
 
-  return { meta, rows, run, logs, ivSamples };
+  return { meta, rows, run, logs, ivSamples, metricSamples };
 }
 
 /** One 30-day ATM IV sample per name per day for the history store. */
@@ -308,6 +350,7 @@ function failedSnapshot(
   const finishedAt = new Date().toISOString();
   return {
     ivSamples: [],
+    metricSamples: {},
     meta: {
       id,
       runId,

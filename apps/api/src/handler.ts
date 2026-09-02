@@ -77,14 +77,16 @@ function renderPage(snap: Snapshot | null): string {
   const cell = (v: string) => `<td style="padding:4px 8px;text-align:right;font-variant-numeric:tabular-nums">${v}</td>`;
   const tr = (r: SnapshotRow) =>
     `<tr>
+       ${cell(num(r.score, 2))}
        <td style="padding:4px 8px">${esc(r.symbol)}</td>
        <td style="padding:4px 8px">${esc(r.expiration)}</td>
        ${cell(String(r.strike))}${cell(String(r.dte))}${cell(pct(r.moneynessPct))}
        ${cell('$' + num(r.entryCredit))}${cell(pct(r.spreadPct))}${cell(pct(r.iv))}
-       ${cell(num(r.delta, 3))}${cell(pct(r.decayYield, 2))}${cell(pct(r.probItm))}${cell(pct(r.pop))}
+       ${cell(r.ivRank == null ? '—' : r.ivRank.toFixed(0))}${cell(pct(r.putSkew25d, 1))}${cell(pct(r.ivVsFitted, 2))}
+       ${cell(num(r.delta, 3))}${cell(pct(r.decayYield, 2))}${cell(pct(r.pop))}
        ${cell(num(r.evToMaxloss, 3))}${cell(pct(r.annRoc))}
      </tr>`;
-  const head = ['sym', 'exp', 'K', 'DTE', 'mny%', 'credit', 'spr%', 'IV', 'Δ', 'θ%', 'P(ITM)', 'PoP', 'EV/mL', 'annROC']
+  const head = ['score', 'sym', 'exp', 'K', 'DTE', 'mny%', 'credit', 'spr%', 'IV', 'IVR', 'skew', 'resid', 'Δ', 'θ%', 'PoP', 'EV/mL', 'annROC']
     .map((h) => `<th style="padding:4px 8px;text-align:right;border-bottom:1px solid #ccc">${h}</th>`)
     .join('');
   return `<!doctype html><meta charset=utf8><title>Put-Sell Screener — ${esc(snap.meta.runId)}</title>
@@ -93,6 +95,7 @@ function renderPage(snap: Snapshot | null): string {
    <p>${esc(snap.meta.runId)} · status <b>${esc(snap.meta.status)}</b> ·
       completeness ${pct(snap.meta.dataCompleteness)} ·
       ${snap.run.candidatesFound} candidates ·
+      score basis <b>${esc(snap.meta.scoreBasis)}</b> ·
       ${snap.meta.displayDelayed ? 'delayed data' : 'realtime'} ·
       <i>${esc(snap.meta.notes ?? '')}</i></p>
    <table style="border-collapse:collapse"><thead><tr>${head}</tr></thead>

@@ -125,7 +125,18 @@ create table if not exists iv_history (
 );
 create index if not exists iv_history_symbol_date_idx on iv_history (symbol, date desc);
 
--- Rolling reference distributions for the M2.5 composite score's z_ref().
+-- Composite-score reference (plan §6.2). `metric_sample_daily` holds the pooled
+-- daily aggregate the pipeline appends; `reference(asOf)` rolls the trailing
+-- window up. `metric_reference` is the optional materialized rollup a job writes.
+create table if not exists metric_sample_daily (
+  metric  text not null,
+  date    date not null,
+  sum     double precision not null,
+  sum_sq  double precision not null,
+  count   integer not null,
+  primary key (metric, date)
+);
+
 create table if not exists metric_reference (
   metric      text not null,
   window_end  date not null,
