@@ -9,3 +9,4 @@ coverage/
 *.log
 .vitest/
 .claude/settings.local.json
+.data/

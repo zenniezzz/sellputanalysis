@@ -6,6 +6,8 @@ export default defineConfig({
     alias: {
       '@pss/options': fileURLToPath(new URL('./packages/options/src/index.ts', import.meta.url)),
       '@pss/market-data': fileURLToPath(new URL('./packages/market-data/src/index.ts', import.meta.url)),
+      '@pss/pipeline': fileURLToPath(new URL('./packages/pipeline/src/index.ts', import.meta.url)),
+      '@pss/store': fileURLToPath(new URL('./packages/store/src/index.ts', import.meta.url)),
     },
   },
   test: {

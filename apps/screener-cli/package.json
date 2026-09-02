@@ -4,10 +4,13 @@
   "private": true,
   "type": "module",
   "bin": {
-    "pss-one-name": "./src/one-name.ts"
+    "pss-one-name": "./src/one-name.ts",
+    "pss-run-snapshot": "./src/run-snapshot.ts"
   },
   "dependencies": {
     "@pss/market-data": "*",
-    "@pss/options": "*"
+    "@pss/options": "*",
+    "@pss/pipeline": "*",
+    "@pss/store": "*"
   }
 }

@@ -1,0 +1,13 @@
+{
+  "name": "@pss/api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "pss-api": "./src/server.ts"
+  },
+  "dependencies": {
+    "@pss/pipeline": "*",
+    "@pss/store": "*"
+  }
+}

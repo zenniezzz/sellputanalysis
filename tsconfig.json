@@ -5,7 +5,9 @@
     "baseUrl": ".",
     "paths": {
       "@pss/options": ["packages/options/src/index.ts"],
-      "@pss/market-data": ["packages/market-data/src/index.ts"]
+      "@pss/market-data": ["packages/market-data/src/index.ts"],
+      "@pss/pipeline": ["packages/pipeline/src/index.ts"],
+      "@pss/store": ["packages/store/src/index.ts"]
     }
   },
   "include": ["packages/**/*.ts", "apps/**/*.ts", "vitest.config.ts"]

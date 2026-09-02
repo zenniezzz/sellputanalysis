@@ -9,6 +9,18 @@ export {
 } from './history.js';
 export {
   StaticRatesSource,
+  bootstrapZeroCurve,
   interpolateZeroRate,
-  TREASURY_SNAPSHOT_2026_08_29,
+  TREASURY_PAR_SNAPSHOT_2026_08_29,
+  type ParYieldPoint,
 } from './rates.js';
+export {
+  RecordingMarketData,
+  RecordingRatesSource,
+  ReplayMarketData,
+  ReplayRatesSource,
+  InMemoryPayloadStore,
+  type PayloadEntry,
+  type PayloadKind,
+  type PayloadSink,
+} from './replay.js';
