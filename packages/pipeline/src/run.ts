@@ -7,6 +7,7 @@
  */
 
 import { interpolateZeroRate, type MarketData, type OptionQuote, type RatesSource, type Underlying } from '@pss/market-data';
+import type { IvHistoryPoint } from '@pss/options';
 import { randomUUID } from 'node:crypto';
 import { universeHash } from './hash.js';
 import { mapPool } from './pool.js';
@@ -16,11 +17,14 @@ import {
   type CandidateGate,
   type IngestionLogEntry,
   type IngestionRun,
+  type IvSample,
+  type RunSnapshotResult,
   type Snapshot,
   type SnapshotMeta,
   type SnapshotRow,
 } from './snapshot-types.js';
 import { inStrikeWindow } from './strikes.js';
+import { buildNameSurface, type NameSurface } from './surface-build.js';
 import { calendarDte } from './time.js';
 import { applyUniverseFilters, type UniverseSource } from './universe.js';
 
@@ -28,6 +32,8 @@ export interface RunSnapshotConfig {
   universe: UniverseSource;
   marketData: MarketData;
   rates: RatesSource;
+  /** Accrued 30-day ATM IV history for a symbol (ascending by date). Enables real IV rank. */
+  ivHistory?: (symbol: string) => Promise<IvHistoryPoint[]>;
   now?: Date;
   runType?: SnapshotMeta['runType'];
   maxNames?: number;
@@ -50,7 +56,7 @@ interface NameData {
   inWindowPutVolume: number;
 }
 
-export async function runSnapshot(config: RunSnapshotConfig): Promise<Snapshot> {
+export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapshotResult> {
   const now = config.now ?? new Date();
   const startedAt = new Date().toISOString();
   const gate: CandidateGate = { ...DEFAULT_GATE, ...config.gate };
@@ -138,6 +144,7 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<Snapshot> 
 
   // ---- Stages D–G: price, gate, (score deferred to M2.5) --------------------
   const rows: SnapshotRow[] = [];
+  const ivSamples: IvSample[] = [];
   const greekDiffs: number[] = [];
   let contractsPriced = 0;
   let ivSolveFailures = 0;
@@ -148,18 +155,30 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<Snapshot> 
     const earnings = earnRes.ok ? earnRes.value : null;
     const q = 0; // M1: no dividend schedule
     const sAdj = name.underlying.spot;
+    const history = config.ivHistory ? await config.ivHistory(name.symbol) : [];
 
+    const expMeta = new Map<string, { quotes: OptionQuote[]; t: number; rate: number; dte: number }>();
     for (const [exp, quotes] of name.quotesByExpiration) {
       const dte = calendarDte(now, exp);
       if (dte < 2) continue;
       const t = dte / 365;
-      const puts = quotes.filter((o) => o.right === 'P');
+      expMeta.set(exp, { quotes, t, rate: rateAt(t), dte });
+    }
 
-      // σ30 proxy (M1): ATM put IV of this expiration, from vendor greeks.
-      const atm = puts
-        .filter((o) => o.vendorGreeks && o.vendorGreeks.iv > 0)
-        .sort((a, b) => Math.abs(a.strike - name.underlying.spot) - Math.abs(b.strike - name.underlying.spot))[0];
-      const sigma30 = atm?.vendorGreeks?.iv ?? name.underlying.hv20 ?? 0.3;
+    // ---- Stage F: smile fit, σ30, residuals, skew, IV rank ----------------
+    const surface = buildNameSurface({
+      spot: name.underlying.spot,
+      spotAdj: sAdj,
+      q,
+      hv20: name.underlying.hv20,
+      expirations: new Map([...expMeta].map(([e, m]) => [e, { quotes: m.quotes, t: m.t, rate: m.rate }])),
+      history,
+    });
+
+    // ---- Stages D–E: price & gate the candidate puts ----------------------
+    for (const [exp, m] of expMeta) {
+      const puts = m.quotes.filter((o) => o.right === 'P');
+      const expSurface = surface.byExpiration.get(exp);
 
       const earningsBeforeExpiry =
         earnings != null && earnings.confirmed &&
@@ -171,14 +190,19 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<Snapshot> 
         spot: name.underlying.spot,
         spotAdj: sAdj,
         q,
-        rate: rateAt(t),
-        t,
-        dte,
-        sigma30,
+        rate: m.rate,
+        t: m.t,
+        dte: m.dte,
+        sigma30: surface.sigma30,
         gate,
         quoteAgeMs,
         earningsBeforeExpiry,
         vrpHaircut,
+        ivRank: surface.ivRank,
+        ivPctile: surface.ivPctile,
+        ivRankIsProxy: surface.ivRankIsProxy,
+        putSkew25d: expSurface?.putSkew25d ?? null,
+        residualByStrike: expSurface?.residualByStrike ?? new Map(),
       };
 
       for (const o of puts) {
@@ -190,6 +214,7 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<Snapshot> 
         if (res.greekDiffPct != null) greekDiffs.push(res.greekDiffPct);
       }
     }
+    ivSamples.push(...maybeIvSample(name.symbol, now, surface, name.underlying));
     log({ symbol: name.symbol, stage: 'D', outcome: 'ok', durationMs: Date.now() - dStart });
   }
 
@@ -220,7 +245,7 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<Snapshot> 
     provider: config.provider ?? 'cboe-delayed',
     displayDelayed: config.displayDelayed ?? true,
     filterDefaults: gate,
-    notes: 'M1: IV rank / composite score not computed; σ30 proxied by ATM IV; q=0.',
+    notes: 'M2: smile-fitted σ30 + skew + LOO residual; IV rank from history or HV proxy; composite score deferred to M2.5; q=0.',
   };
 
   const run: IngestionRun = {
@@ -236,7 +261,31 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<Snapshot> 
     status,
   };
 
-  return { meta, rows, run, logs };
+  return { meta, rows, run, logs, ivSamples };
+}
+
+/** One 30-day ATM IV sample per name per day for the history store. */
+function maybeIvSample(
+  symbol: string,
+  now: Date,
+  surface: NameSurface,
+  underlying: Underlying,
+): IvSample[] {
+  if (!Number.isFinite(surface.sigma30) || surface.sigma30 <= 0) return [];
+  const nearest30 = [...surface.byExpiration.values()].sort(
+    (a, b) => Math.abs(a.putSkew25d ?? 0) - Math.abs(b.putSkew25d ?? 0),
+  )[0];
+  return [
+    {
+      symbol,
+      date: now.toISOString().slice(0, 10),
+      atmIv30d: surface.sigma30,
+      hv20: underlying.hv20,
+      hv252: underlying.hv252,
+      putSkew25d: nearest30?.putSkew25d ?? null,
+      source: 'own',
+    },
+  ];
 }
 
 function median(xs: number[]): number {
@@ -255,9 +304,10 @@ function failedSnapshot(
   config: RunSnapshotConfig,
   logs: IngestionLogEntry[],
   notes: string,
-): Snapshot {
+): RunSnapshotResult {
   const finishedAt = new Date().toISOString();
   return {
+    ivSamples: [],
     meta: {
       id,
       runId,

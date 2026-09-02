@@ -3,21 +3,25 @@
 A daily screener for put-selling candidates. Full spec:
 [`put-sell-screener-plan.md`](./put-sell-screener-plan.md) (v3.0).
 
-## Status — M1 (see plan §12)
+## Status — M0 → M2 (see plan §12)
 
 | Deliverable | State |
 |---|---|
-| `@pss/options` — BSM price + analytic greeks, IV solver, forecast-measure EV, fill/cost model, derived metrics | ✅ full §5.9 test suite |
-| `@pss/market-data` — `MarketData` / `RatesSource` interfaces + `Result<T>`; CBOE adapter; **par→zero bootstrap**; Stooq HV; **record / replay wrappers** | ✅ |
-| `@pss/pipeline` — stages A–H (`runSnapshot`): universe + filters, strike pre-filter, concurrency pool, DST-aware DTE, per-contract pricing/gating, status & completeness, greek cross-check | ✅ mock + live |
-| `@pss/store` — `SnapshotStore`; `JsonFileStore` (default); `PgSnapshotStore` + `schema.sql` (CI-gated); `FilePayloadStore` replay bundles | ✅ |
-| `@pss/screener-cli` — `cli:one-name`, `cli:run-snapshot` (+ `--as-of` replay) | ✅ |
-| `@pss/api` — framework-free read server: `GET /`, `/api/snapshots/latest`, `/api/snapshots/:id` | ✅ walking skeleton |
-| Cloud deploy | ⏳ blocked on Node 20 for the Next.js path (M3); the read server is the interim skeleton |
+| `@pss/options` — BSM price + analytic greeks, IV solver, forecast EV, fill model, derived metrics, **IV rank/percentile + HV proxy**, **smile fit + LOO residual + σ30 + put skew** | ✅ full §5.9 suite |
+| `@pss/market-data` — `MarketData`/`RatesSource` + `Result<T>`; CBOE adapter; **par→zero bootstrap**; Stooq HV; **record/replay wrappers** | ✅ |
+| `@pss/pipeline` — stages A–H (`runSnapshot`): universe + filters, strike pre-filter, concurrency pool, DST-aware DTE, **stage F smile/σ30/skew/IV-rank**, per-contract pricing/gating, cash-settled carve-out, status/completeness, greek cross-check, **σ30 history samples** | ✅ mock + live |
+| `@pss/store` — `SnapshotStore` (`JsonFileStore` / `PgSnapshotStore` + `schema.sql`); **`IvHistoryStore`** (JSON / PG); `FilePayloadStore` replay bundles; **ORATS backfill importer** | ✅ |
+| `@pss/observability` — Sentry-if-DSN error reporting; healthchecks.io-style heartbeat | ✅ |
+| `@pss/screener-cli` — `cli:one-name`, `cli:run-snapshot` (+`--as-of`), `cli:greek-xcheck` | ✅ |
+| `@pss/api` — framework-free read server: `GET /`, `/api/snapshots/latest`, `/:id` | ✅ walking skeleton |
+| CI | `ci.yml` (typecheck + 137 tests) · `nightly.yml` (live greek cross-check) |
+| ORATS 1-year IV backfill purchase · composite score · Next.js app + cloud deploy | ⏳ M2 (data purchase) / M2.5 / M3 |
 
-M1 verified on live CBOE data (10 names): `status=good`, 2448 contracts priced,
-0 IV failures, greek cross-check **1.40%** median abs (SLO < 2%), 36 candidates;
-`--as-of` replay reproduces all 2448 rows identically.
+Verified on live CBOE data (10 names): `status=good`, 2,840 contracts priced,
+0 IV failures, greek cross-check **1.07%** median abs (SLO < 2%), 33 candidates,
+per-name put skew + leave-one-out IV residuals populated; `--as-of` replay
+reproduces all 2,840 rows identically. `cli:greek-xcheck` (6 names, live): median
+**1.37%**, pass.
 
 The put-theta formula is the **v3.0-corrected** one (`r`/`q` terms were
 sign-flipped in plan v2.0); `packages/options/src/bsm.test.ts` carries the
@@ -29,10 +33,11 @@ finite-difference regression guard and a deep-ITM positive-theta check.
 packages/
   options/        pure math — no I/O, no deps (dev-only cross-check vs `black-scholes`)
   market-data/    provider adapters behind one interface; record/replay
-  pipeline/       runSnapshot — stages A–H
-  store/          snapshot persistence (JSON file / Postgres) + replay bundles
+  pipeline/       runSnapshot — stages A–H, smile fit, IV rank
+  store/          snapshot + IV-history persistence (JSON / Postgres); replay bundles
+  observability/  error reporting + heartbeat (opt-in via env)
 apps/
-  screener-cli/   one-name + full-snapshot runners
+  screener-cli/   one-name · full-snapshot (+replay) · greek-xcheck
   api/            read-only snapshot server (walking skeleton)
 ```
 
@@ -74,10 +79,13 @@ Set `DATABASE_URL` to route the store and API through Postgres instead of
   the `annualizedVol` unit tests.
 - **Rates:** a static 2026-08-29 Treasury snapshot; M1 wires the live feed +
   bootstrap.
-- **IV rank, surface fit, composite score:** not yet (M2 / M2.5). `σ30` is proxied
-  by each expiration's ATM IV; `model_caution.ivRankProxy` is set on every row.
+- **IV rank:** real once ≥ 60 self-accrued σ30 samples exist per name; until then
+  the HV-percentile proxy or null, with `model_caution.ivRankProxy` set. Import a
+  1-year ORATS export via `parseOratsIvHistoryCsv` to remove the cold start.
+- **Composite score:** deferred to M2.5 (`score` is null, `scoreBasis` =
+  `cross_sectional`); needs the `metric_reference` distributions.
 - **Universe:** a curated ~65-name list stands in for the OCC daily volume file
-  (plan §3.1); leveraged/inverse ETPs are filtered out, names ranked by in-window
+  (plan §3.1); leveraged/inverse ETPs filtered out, names ranked by in-window
   put volume.
 - **Cloud deploy:** the `@pss/api` read server is the walking skeleton; the
   Next.js app + real deploy come with M3 (needs Node 20).

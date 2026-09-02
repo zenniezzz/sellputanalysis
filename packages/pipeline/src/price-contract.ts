@@ -34,6 +34,13 @@ export interface PriceContext {
   quoteAgeMs: number;
   earningsBeforeExpiry: boolean;
   vrpHaircut: number;
+  /** Stage F outputs for this (name, expiration). */
+  ivRank: number | null;
+  ivPctile: number | null;
+  ivRankIsProxy: boolean;
+  putSkew25d: number | null;
+  /** strike → leave-one-out IV residual vs the fitted smile. */
+  residualByStrike: Map<number, number>;
 }
 
 export interface PriceResult {
@@ -99,7 +106,7 @@ function baseRow(o: OptionQuote, ctx: PriceContext, mid: number): SnapshotRow {
     modelCaution: {
       borrow: ctx.underlying.hardToBorrow || (ctx.underlying.borrowRate ?? 0) > 0.01,
       dividend: ctx.underlying.dividends.length === 0,
-      ivRankProxy: true,
+      ivRankProxy: ctx.ivRankIsProxy,
       belowParity: false,
       earningsBeforeExpiry: ctx.earningsBeforeExpiry,
       spotAsync: o.underlyingPriceAtQuote == null,
@@ -170,6 +177,10 @@ export function priceContract(o: OptionQuote, ctx: PriceContext): PriceResult {
     entryCredit100: fill.entryCredit100,
     slippageK: 0.3,
     iv: ivRes.iv,
+    ivVsFitted: ctx.residualByStrike.get(o.strike) ?? null,
+    ivRank: ctx.ivRank,
+    ivPctile: ctx.ivPctile,
+    putSkew25d: ctx.putSkew25d,
     delta: g.delta,
     gamma: g.gamma,
     thetaDay: g.thetaPerDay,

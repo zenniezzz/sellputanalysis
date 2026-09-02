@@ -8,6 +8,7 @@ export default defineConfig({
       '@pss/market-data': fileURLToPath(new URL('./packages/market-data/src/index.ts', import.meta.url)),
       '@pss/pipeline': fileURLToPath(new URL('./packages/pipeline/src/index.ts', import.meta.url)),
       '@pss/store': fileURLToPath(new URL('./packages/store/src/index.ts', import.meta.url)),
+      '@pss/observability': fileURLToPath(new URL('./packages/observability/src/index.ts', import.meta.url)),
     },
   },
   test: {

@@ -1,0 +1,20 @@
+name: Nightly greek cross-check
+
+on:
+  schedule:
+    - cron: '17 6 * * 2-6' # ~01:17 ET Tue–Sat (after the prior US session)
+  workflow_dispatch:
+
+jobs:
+  greek-xcheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run cli:greek-xcheck -- --names SPY,QQQ,AAPL,MSFT,NVDA,AMD --max 0.02
+        env:
+          HEARTBEAT_URL_GREEK_XCHECK: ${{ secrets.HEARTBEAT_URL_GREEK_XCHECK }}

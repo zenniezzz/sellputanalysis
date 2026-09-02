@@ -110,3 +110,47 @@ create table if not exists ingestion_log (
   seq         integer not null,
   primary key (run_id, seq)
 );
+
+-- 30-day ATM IV history for IV rank / percentile (plan §9.1). Values are AS
+-- COMPUTED on `date` and never recomputed as the trailing window rolls.
+create table if not exists iv_history (
+  symbol        text not null,
+  date          date not null,
+  atm_iv_30d    numeric(9,6) not null,
+  hv20          numeric(9,6),
+  hv252         numeric(9,6),
+  put_skew_25d  numeric(9,6),
+  source        text not null check (source in ('own','orats_backfill','hv_proxy')),
+  primary key (symbol, date)
+);
+create index if not exists iv_history_symbol_date_idx on iv_history (symbol, date desc);
+
+-- Rolling reference distributions for the M2.5 composite score's z_ref().
+create table if not exists metric_reference (
+  metric      text not null,
+  window_end  date not null,
+  mean        numeric(18,6) not null,
+  stddev      numeric(18,6) not null,
+  n_days      integer not null,
+  primary key (metric, window_end)
+);
+
+-- Raw provider-response bundle index for replay (plan §4.5).
+create table if not exists raw_payload_manifest (
+  run_id      text not null,
+  symbol      text not null default '',
+  kind        text not null check (kind in ('chain','underlying','expirations','earnings','rates','most_active')),
+  object_key  text not null,
+  bytes       bigint not null,
+  fetched_at  timestamptz not null,
+  pinned      boolean not null default false,
+  primary key (run_id, symbol, kind)
+);
+
+-- Partitioning note (plan §9.5): at production scale `snapshot_row` is
+-- range-partitioned monthly on `snapshot_day`, e.g.
+--   alter table snapshot_row ... partition by range (snapshot_day);
+--   create table snapshot_row_2026_09 partition of snapshot_row
+--     for values from ('2026-09-01') to ('2026-10-01');
+-- The M1 schema above is the unpartitioned form; the migration to partitions
+-- lands with drizzle-kit alongside the Next.js app.

@@ -26,12 +26,15 @@ import {
   StaticUniverseSource,
   type UniverseCandidate,
 } from '@pss/pipeline';
-import { FilePayloadStore, JsonFileStore } from '@pss/store';
+import { FilePayloadStore, JsonFileStore, JsonIvHistoryStore } from '@pss/store';
+import type { IvHistoryPoint } from '@pss/options';
+import { heartbeat, initErrorReporting, reportError } from '@pss/observability';
 import { fmt } from './table.js';
 
 const DATA_ROOT = join(process.cwd(), '.data');
 const SNAP_DIR = join(DATA_ROOT, 'snapshots');
 const BUNDLE_DIR = join(DATA_ROOT, 'bundles');
+const IV_DIR = join(DATA_ROOT, 'iv-history');
 
 interface Args {
   limit: number;
@@ -65,8 +68,11 @@ function universeFor(args: Args): StaticUniverseSource {
 }
 
 async function main(): Promise<void> {
+  await initErrorReporting();
   const args = parseArgs(process.argv.slice(2));
   const store = new JsonFileStore(SNAP_DIR);
+  const ivStore = new JsonIvHistoryStore(IV_DIR);
+  const ivHistory = async (symbol: string): Promise<IvHistoryPoint[]> => ivStore.history(symbol, 400);
 
   let snapshot;
 
@@ -78,6 +84,7 @@ async function main(): Promise<void> {
       universe: universeFor(args),
       marketData: new ReplayMarketData(entries),
       rates: new ReplayRatesSource(entries),
+      ivHistory,
       now: new Date(`${manifest.asOf}T14:00:00Z`),
       runType: 'replay',
       maxNames: 50,
@@ -92,6 +99,7 @@ async function main(): Promise<void> {
       universe: universeFor(args),
       marketData: new RecordingMarketData(new CboeAdapter(), bundle),
       rates: new RecordingRatesSource(new StaticRatesSource(), bundle),
+      ivHistory,
       now,
       runType: args.runType,
       maxNames: 50,
@@ -103,6 +111,10 @@ async function main(): Promise<void> {
   }
 
   await store.saveSnapshot(snapshot);
+  if (snapshot.meta.status !== 'failed' && snapshot.ivSamples.length > 0) {
+    await ivStore.append(snapshot.ivSamples);
+    console.log(`iv-history: appended ${snapshot.ivSamples.length} σ30 samples → ${IV_DIR}`);
+  }
 
   const { meta, run, rows } = snapshot;
   console.log('');
@@ -124,16 +136,29 @@ async function main(): Promise<void> {
     console.log(
       `    ${r.symbol.padEnd(6)} ${r.expiration} ${String(r.strike).padStart(8)}P  ` +
         `Δ${fmt.n(r.delta ?? NaN, 2).padStart(6)}  IV ${fmt.pct(r.iv ?? NaN).padStart(6)}  ` +
+        `IVR ${r.ivRank == null ? '  —' : r.ivRank.toFixed(0).padStart(3)}  ` +
+        `skew ${fmt.pct(r.putSkew25d ?? NaN, 1).padStart(6)}  ` +
+        `resid ${fmt.pct(r.ivVsFitted ?? NaN, 2).padStart(6)}  ` +
         `θ% ${fmt.pct(r.decayYield ?? NaN, 2).padStart(6)}  ` +
         `annROC ${fmt.pct(r.annRoc ?? NaN).padStart(6)}  ` +
         `EV/mL ${fmt.n(r.evToMaxloss ?? NaN, 3).padStart(7)}`,
     );
   }
+  const candidateCount = rows.filter((r) => r.isCandidate).length;
+  const proxied = rows.filter((r) => r.isCandidate && r.modelCaution.ivRankProxy).length;
+  if (proxied > 0) {
+    console.log(`  (${proxied}/${candidateCount} candidates on HV-proxy / absent IV rank — own history still accruing)`);
+  }
   console.log('');
   console.log(`  saved → ${join(SNAP_DIR, meta.snapshotDay, `${meta.runId}.json`)}`);
+
+  if (!args.asOf) {
+    await heartbeat('snapshot', meta.status === 'failed' ? 'fail' : 'success');
+  }
 }
 
-main().catch((e) => {
-  console.error(e);
+main().catch(async (e) => {
+  reportError(e, { cli: 'run-snapshot' });
+  await heartbeat('snapshot', 'fail');
   process.exit(1);
 });

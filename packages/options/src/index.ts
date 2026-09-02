@@ -17,6 +17,22 @@ export {
 } from './ev.js';
 export { mcEvPerShare, mulberry32, stdNormalSampler } from './mc.js';
 export {
+  ivRankFromHistory,
+  type IvHistoryPoint,
+  type IvRankResult,
+  type IvRankOptions,
+} from './iv-rank.js';
+export {
+  fitSmile,
+  smileIvAt,
+  leaveOneOutResiduals,
+  constantMaturityIv,
+  putSkew25Delta,
+  type SmilePoint,
+  type QuadFit,
+  type ExpirationAtmVar,
+} from './surface.js';
+export {
   fillModel,
   cleanQuoteReject,
   moneynessPct,

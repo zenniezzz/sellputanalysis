@@ -5,10 +5,12 @@
   "type": "module",
   "bin": {
     "pss-one-name": "./src/one-name.ts",
-    "pss-run-snapshot": "./src/run-snapshot.ts"
+    "pss-run-snapshot": "./src/run-snapshot.ts",
+    "pss-greek-xcheck": "./src/greek-xcheck.ts"
   },
   "dependencies": {
     "@pss/market-data": "*",
+    "@pss/observability": "*",
     "@pss/options": "*",
     "@pss/pipeline": "*",
     "@pss/store": "*"

@@ -141,3 +141,21 @@ export interface Snapshot {
   run: IngestionRun;
   logs: IngestionLogEntry[];
 }
+
+export type IvSampleSource = 'own' | 'orats_backfill' | 'hv_proxy';
+
+export interface IvSample {
+  symbol: string;
+  /** YYYY-MM-DD */
+  date: string;
+  atmIv30d: number;
+  hv20: number | null;
+  hv252: number | null;
+  putSkew25d: number | null;
+  source: IvSampleSource;
+}
+
+/** runSnapshot output: the persisted Snapshot plus the day's IV-history samples. */
+export interface RunSnapshotResult extends Snapshot {
+  ivSamples: IvSample[];
+}

@@ -93,6 +93,54 @@ describe('runSnapshot', () => {
     expect(full.meta.dataCompleteness).toBeCloseTo(1, 6);
   });
 
+  it('fits a smile: flat vendor IV ⇒ ~zero skew and ~zero residual', async () => {
+    const snap = await runSnapshot(config());
+    const resid = snap.rows
+      .filter((r) => r.iv != null && r.ivVsFitted != null)
+      .map((r) => Math.abs(r.ivVsFitted!))
+      .sort((a, b) => a - b);
+    expect(resid.length).toBeGreaterThan(0);
+    // flat vendor IV + penny-rounded quotes: the bulk of residuals hug zero,
+    // a real skew would push the whole distribution up by vol points.
+    expect(resid[Math.floor(resid.length / 2)]!).toBeLessThan(2e-3);
+    const skew = snap.rows.map((r) => r.putSkew25d).filter((s): s is number => s != null).sort((a, b) => a - b);
+    expect(Math.abs(skew[Math.floor(skew.length / 2)]!)).toBeLessThan(2e-3);
+  });
+
+  it('uses real IV rank when history is supplied, else the proxy flag', async () => {
+    const withHistory = await runSnapshot(
+      config({
+        ivHistory: async (symbol) =>
+          Array.from({ length: 90 }, (_, i) => ({
+            date: `2026-06-${String((i % 28) + 1).padStart(2, '0')}`,
+            atmIv30d: symbol === 'AAA' ? 0.2 + (i / 89) * 0.4 : 0.4,
+            hv20: 0.25,
+          })),
+      }),
+    );
+    const aaa = withHistory.rows.find((r) => r.symbol === 'AAA' && r.ivRank != null);
+    expect(aaa).toBeDefined();
+    expect(aaa!.modelCaution.ivRankProxy).toBe(false);
+    expect(aaa!.ivRank!).toBeGreaterThan(0);
+    expect(aaa!.ivRank!).toBeLessThanOrEqual(100);
+
+    const noHistory = await runSnapshot(config());
+    for (const r of noHistory.rows.filter((x) => x.isCandidate)) {
+      expect(r.modelCaution.ivRankProxy).toBe(true);
+    }
+  });
+
+  it('emits one σ30 history sample per priced name', async () => {
+    const snap = await runSnapshot(config());
+    const symbols = new Set(snap.ivSamples.map((s) => s.symbol));
+    expect(symbols).toEqual(new Set(['AAA', 'BBB', 'CCC', 'DDD']));
+    for (const s of snap.ivSamples) {
+      expect(s.date).toBe('2026-09-02');
+      expect(s.atmIv30d).toBeGreaterThan(0);
+      expect(s.source).toBe('own');
+    }
+  });
+
   it('replays byte-identically from a recorded bundle', async () => {
     const sink = new InMemoryPayloadStore();
     const live = new MockMarketData(NAMES, { now: NOW });
