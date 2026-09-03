@@ -33,6 +33,12 @@ export {
   type ExpirationAtmVar,
 } from './surface.js';
 export {
+  pnlProfile,
+  type PnlProfile,
+  type PnlProfileInputs,
+  type PnlProfilePoint,
+} from './cone.js';
+export {
   computeScores,
   scoreColorPosition,
   SCORE_PRESETS,

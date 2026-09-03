@@ -14,6 +14,7 @@ import { AccountBar } from './AccountBar';
 import { CandidatesTable } from './CandidatesTable';
 import { FilterPanel } from './FilterPanel';
 import { SavedScreens } from './SavedScreens';
+import { Scatter } from './Scatter';
 import { WhyNotHere } from './WhyNotHere';
 
 export function CandidatesView({
@@ -30,6 +31,8 @@ export function CandidatesView({
   const [data, setData] = useState<ScreenResponse>(initial);
   const [filters, setFilters] = useState<ScreenFilters>(initial.filters);
   const [watchlist, setWatchlist] = useState<string[]>(initialWatchlist);
+  const [highlightedOcc, setHighlightedOcc] = useState<string | null>(null);
+  const [expandedOcc, setExpandedOcc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
@@ -143,6 +146,21 @@ export function CandidatesView({
             </a>
           </div>
 
+          {data.visible.length > 0 && (
+            <Scatter
+              rows={data.visible}
+              highlightedOcc={highlightedOcc}
+              onHover={setHighlightedOcc}
+              onSelect={(occ) => {
+                setExpandedOcc(occ);
+                setHighlightedOcc(occ);
+                requestAnimationFrame(() =>
+                  document.getElementById(`row-${occ.trim()}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
+                );
+              }}
+            />
+          )}
+
           {counts.visible === 0 && nearestMatches.length > 0 && (
             <div className="nearest">
               No matches. Nearest:{' '}
@@ -164,6 +182,10 @@ export function CandidatesView({
             sort={filters.sort}
             sortDir={filters.sortDir}
             onSort={setSort}
+            highlightedOcc={highlightedOcc}
+            onHover={setHighlightedOcc}
+            expandedOcc={expandedOcc}
+            onToggleExpand={(occ) => setExpandedOcc((cur) => (cur === occ ? null : occ))}
           />
 
           <WhyNotHere filters={filters} />

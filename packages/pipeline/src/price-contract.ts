@@ -101,6 +101,7 @@ function baseRow(o: OptionQuote, ctx: PriceContext, mid: number): SnapshotRow {
     creditToMaxloss: null,
     sigmaF: null,
     vrpHaircut: null,
+    mu: null,
     score: null,
     scoreComponents: null,
     modelCaution: {
@@ -203,6 +204,7 @@ export function priceContract(o: OptionQuote, ctx: PriceContext): PriceResult {
     creditToMaxloss: ev.creditToMaxLoss,
     sigmaF,
     vrpHaircut: ctx.vrpHaircut,
+    mu: ctx.rate - ctx.q,
     assignmentWatch:
       intrinsic > 0 && timeValue < 0.1 * intrinsic && ctx.underlying.exerciseStyle === 'american',
   } satisfies Partial<SnapshotRow>);

@@ -74,6 +74,7 @@ create table if not exists snapshot_row (
   credit_to_maxloss numeric(9,6),
   sigma_f           numeric(9,6),
   vrp_haircut       numeric(6,4),
+  mu                numeric(9,6),
   score             numeric(9,4),
   score_components  jsonb,
   model_caution     jsonb not null,

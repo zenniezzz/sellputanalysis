@@ -105,6 +105,8 @@ export interface SnapshotRow {
   creditToMaxloss: number | null;
   sigmaF: number | null;
   vrpHaircut: number | null;
+  /** Forecast drift (r − q) used for EV / the P&L cone. */
+  mu: number | null;
   score: number | null;
   scoreComponents: Record<string, number> | null;
   modelCaution: ModelCaution;

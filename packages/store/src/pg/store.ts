@@ -69,9 +69,9 @@ export class PgSnapshotStore implements SnapshotStore {
          moneyness_pct, spread_pct, vol_oi, decay_yield, theta_vega,
          breakeven, be_pct, prob_itm, pop, em_distance,
          csp_capital_100, regt_capital_100, ann_roc, capital_basis,
-         ev_100, max_loss_100, ev_to_maxloss, credit_to_maxloss, sigma_f, vrp_haircut,
+         ev_100, max_loss_100, ev_to_maxloss, credit_to_maxloss, sigma_f, vrp_haircut, mu,
          score, score_components, model_caution, assignment_watch, is_candidate, excluded_reason)
-       values (${range(57)})`,
+       values (${range(58)})`,
       [
         snapshotId, snapshotDay, r.occSymbol, r.symbol, r.expiration, r.strike, r.multiplier, r.dte,
         r.spot, r.spotAdj, r.bid, r.ask, r.mid, r.last, r.volume, r.openInterest, r.quoteAsOf,
@@ -81,7 +81,7 @@ export class PgSnapshotStore implements SnapshotStore {
         r.moneynessPct, r.spreadPct, r.volOi, r.decayYield, r.thetaVega,
         r.breakeven, r.bePct, r.probItm, r.pop, r.emDistance,
         r.cspCapital100, r.regtCapital100, r.annRoc, r.capitalBasis,
-        r.ev100, r.maxLoss100, r.evToMaxloss, r.creditToMaxloss, r.sigmaF, r.vrpHaircut,
+        r.ev100, r.maxLoss100, r.evToMaxloss, r.creditToMaxloss, r.sigmaF, r.vrpHaircut, r.mu,
         r.score, r.scoreComponents ? JSON.stringify(r.scoreComponents) : null,
         JSON.stringify(r.modelCaution), r.assignmentWatch, r.isCandidate, r.excludedReason,
       ],
@@ -241,6 +241,7 @@ function dbRowToSnapshotRow(r: Record<string, unknown>): SnapshotRow {
     creditToMaxloss: numOrNull(r['credit_to_maxloss']),
     sigmaF: numOrNull(r['sigma_f']),
     vrpHaircut: numOrNull(r['vrp_haircut']),
+    mu: numOrNull(r['mu']),
     score: numOrNull(r['score']),
     scoreComponents: (asJson(r['score_components']) as Record<string, number> | null) ?? null,
     modelCaution: asJson(r['model_caution']) as SnapshotRow['modelCaution'],

@@ -3,11 +3,11 @@
 A daily screener for put-selling candidates. Full spec:
 [`put-sell-screener-plan.md`](./put-sell-screener-plan.md) (v3.0).
 
-## Status — M0 → M3.5 (see plan §12)
+## Status — M0 → M4 (see plan §12)
 
 | Deliverable | State |
 |---|---|
-| `@pss/options` — BSM + greeks, IV solver, forecast EV, fill model, IV rank/percentile + HV proxy, smile fit + LOO residual + σ30 + put skew, **composite score (3 presets, z_ref blend, NULL renorm, fixed colour domain)** | ✅ full §5.9 suite |
+| `@pss/options` — BSM + greeks, IV solver, forecast EV, fill model, IV rank/percentile + HV proxy, smile fit + LOO residual + σ30 + put skew, composite score (3 presets, z_ref blend, NULL renorm, fixed colour domain), **P&L probability profile (`pnlProfile` — payoff × forecast density, integrates to `ev100`)** | ✅ full §5.9 suite |
 | `@pss/market-data` — `MarketData`/`RatesSource` + `Result<T>`; CBOE adapter; **par→zero bootstrap**; Stooq HV; **record/replay wrappers** | ✅ |
 | `@pss/pipeline` — stages A–H (`runSnapshot`): universe + filters, strike pre-filter, concurrency pool, DST-aware DTE, stage F smile/σ30/skew/IV-rank, **stage G composite score**, per-contract pricing/gating, cash-settled carve-out, status/completeness, greek cross-check, σ30 + metric history samples | ✅ mock + live |
 | `@pss/store` — `SnapshotStore` · `IvHistoryStore` · `MetricReferenceStore` · **`AuthStore`** (Auth.js adapter data) · **`UserDataStore`** (saved screens + watchlists) — JSON + Postgres each; `FilePayloadStore` replay bundles; ORATS importer | ✅ |
@@ -15,10 +15,10 @@ A daily screener for put-selling candidates. Full spec:
 | `@pss/screen` — filter schema + URL codec (round-trip, clamp, band-repair) · `applyScreen` (live re-filter over persisted rows, per-basis ROC/capital) · `explainSymbol` ("why isn't X here") · nearest-match relaxations · CSV export | ✅ |
 | `@pss/screener-cli` — `cli:one-name`, `cli:run-snapshot` (+`--as-of`, `--preset`), `cli:greek-xcheck` | ✅ |
 | `@pss/api` — framework-free read server | ✅ walking skeleton |
-| **`@pss/web` — Next.js 14 app**: Candidates table (sortable, 5 column presets), full §7 filter panel, URL-encoded state, zero-result nearest-match UX, "why isn't X here?", CSV/JSON export · **Auth.js accounts (email magic-link + dev login + optional Google), saved screens, watchlists** | ✅ `npm run web` |
-| CI | `ci.yml` (typecheck ×2 + 177 tests + `next build`) · `nightly.yml` (live greek cross-check) |
+| **`@pss/web` — Next.js 14 app**: Candidates table (sortable, expandable, 5 column presets), full §7 filter panel, URL state, nearest-match UX, "why isn't X here?", CSV/JSON export · Auth.js accounts + saved screens + watchlists · **scatter (6 axis presets, target band, score shade / OI size, chart⇄table) · row-expander P&L probability cone + greeks + score breakdown · scatter⇄table cross-highlight** | ✅ `npm run web` |
+| CI | `ci.yml` (typecheck ×2 + 181 tests + `next build`) · `nightly.yml` (live greek cross-check) |
 | ORATS 1-year IV backfill purchase | ⏳ M2 (data purchase — importer ready) |
-| Scatter + Compare tab | ⏭ M4 |
+| Compare tab · Freeze + Snapshots diff | ⏭ M4.5 / M5 |
 
 Verified on live CBOE data (10 names): `status=good`, 2,840 contracts priced,
 0 IV failures, greek cross-check **1.11%** median abs (SLO < 2%), 33 candidates

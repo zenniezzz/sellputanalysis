@@ -1,7 +1,9 @@
 'use client';
 
+import type { ReactNode } from 'react';
 import { COLUMN_PRESETS, type ColumnPreset, type ScreenedRow, type SortDir, type SortKey } from '@pss/screen';
 import { num, pct, usd, usd0, int } from '../lib/format';
+import { RowDetail } from './RowDetail';
 
 interface Col {
   key: SortKey;
@@ -61,12 +63,20 @@ export function CandidatesTable({
   sort,
   sortDir,
   onSort,
+  highlightedOcc,
+  onHover,
+  expandedOcc,
+  onToggleExpand,
 }: {
   rows: ScreenedRow[];
   preset: ColumnPreset;
   sort: SortKey;
   sortDir: SortDir;
   onSort: (key: SortKey) => void;
+  highlightedOcc: string | null;
+  onHover: (occ: string | null) => void;
+  expandedOcc: string | null;
+  onToggleExpand: (occ: string) => void;
 }) {
   const cols = COLUMN_PRESETS[preset].map((k) => COLS[k]);
 
@@ -98,27 +108,51 @@ export function CandidatesTable({
             const flags = Object.entries(r.modelCaution)
               .filter(([, v]) => v)
               .map(([k]) => k);
+            const expanded = r.occSymbol === expandedOcc;
             return (
-              <tr key={r.occSymbol}>
-                {cols.map((c) => (
-                  <td key={c.key} className={`${c.key === 'symbol' ? 'sym' : ''} ${c.cls?.(r) ?? ''}`}>
-                    {c.render(r)}
-                  </td>
-                ))}
-                <td className="sym">
-                  {r.expiration} {r.strike}P{' '}
-                  {r.assignmentWatch && <span className="chip warn">assign</span>}
-                  {flags.map((f) => (
-                    <span key={f} className="chip">
-                      {FLAG_LABEL[f] ?? f}
-                    </span>
+              <FragmentRow key={r.occSymbol}>
+                <tr
+                  id={`row-${r.occSymbol.trim()}`}
+                  onMouseEnter={() => onHover(r.occSymbol)}
+                  onMouseLeave={() => onHover(null)}
+                  onClick={() => onToggleExpand(r.occSymbol)}
+                  style={{
+                    cursor: 'pointer',
+                    background: r.occSymbol === highlightedOcc ? 'var(--panel-2)' : undefined,
+                  }}
+                >
+                  {cols.map((c) => (
+                    <td key={c.key} className={`${c.key === 'symbol' ? 'sym' : ''} ${c.cls?.(r) ?? ''}`}>
+                      {c.render(r)}
+                    </td>
                   ))}
-                </td>
-              </tr>
+                  <td className="sym">
+                    {expanded ? '▾ ' : '▸ '}
+                    {r.expiration} {r.strike}P{' '}
+                    {r.assignmentWatch && <span className="chip warn">assign</span>}
+                    {flags.map((f) => (
+                      <span key={f} className="chip">
+                        {FLAG_LABEL[f] ?? f}
+                      </span>
+                    ))}
+                  </td>
+                </tr>
+                {expanded && (
+                  <tr>
+                    <td colSpan={cols.length + 1} style={{ padding: 0, textAlign: 'left' }}>
+                      <RowDetail row={r} />
+                    </td>
+                  </tr>
+                )}
+              </FragmentRow>
             );
           })}
         </tbody>
       </table>
     </div>
   );
+}
+
+function FragmentRow({ children }: { children: ReactNode }) {
+  return <>{children}</>;
 }
