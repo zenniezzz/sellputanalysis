@@ -3,7 +3,7 @@
 A daily screener for put-selling candidates. Full spec:
 [`put-sell-screener-plan.md`](./put-sell-screener-plan.md) (v3.0).
 
-## Status — M0 → M4 (see plan §12)
+## Status — M0 → M5 (see plan §12)
 
 | Deliverable | State |
 |---|---|
@@ -15,10 +15,10 @@ A daily screener for put-selling candidates. Full spec:
 | `@pss/screen` — filter schema + URL codec (round-trip, clamp, band-repair) · `applyScreen` (live re-filter over persisted rows, per-basis ROC/capital) · `explainSymbol` ("why isn't X here") · nearest-match relaxations · CSV export | ✅ |
 | `@pss/screener-cli` — `cli:one-name`, `cli:run-snapshot` (+`--as-of`, `--preset`), `cli:greek-xcheck` | ✅ |
 | `@pss/api` — framework-free read server | ✅ walking skeleton |
-| **`@pss/web` — Next.js 14 app**: Candidates table (sortable, expandable, 5 column presets), full §7 filter panel, URL state, nearest-match UX, "why isn't X here?", CSV/JSON export · Auth.js accounts + saved screens + watchlists · **scatter (6 axis presets, target band, score shade / OI size, chart⇄table) · row-expander P&L probability cone + greeks + score breakdown · scatter⇄table cross-highlight** | ✅ `npm run web` |
-| CI | `ci.yml` (typecheck ×2 + 181 tests + `next build`) · `nightly.yml` (live greek cross-check) |
+| **`@pss/web` — Next.js 14 app**: 3-tab UI (Candidates / Compare / Snapshots). Candidates: sortable expandable table, full §7 filters + URL state, nearest-match, "why isn't X here?", CSV/JSON, scatter (6 presets, chart⇄table, cross-highlight), row-expander P&L cone. **Compare: tray (max 6) → transposed contract×metric table (best-in-row) + overlaid P&L cones + freezable `/compare/<id>` shareable link + CSV/print-PDF. Snapshots: bookmarks, Freeze, A↔B diff view.** Auth.js accounts + saved screens + watchlists | ✅ `npm run web` |
+| CI | `ci.yml` (typecheck ×2 + 208 tests + `next build`) · `nightly.yml` (live greek cross-check) |
 | ORATS 1-year IV backfill purchase | ⏳ M2 (data purchase — importer ready) |
-| Compare tab · Freeze + Snapshots diff | ⏭ M4.5 / M5 |
+| M6 (Universe tab, glossary, Model page, a11y, read API docs) | ⏭ next |
 
 Verified on live CBOE data (10 names): `status=good`, 2,840 contracts priced,
 0 IV failures, greek cross-check **1.11%** median abs (SLO < 2%), 33 candidates
@@ -41,6 +41,8 @@ packages/
   store/          snapshot + IV-history + metric-reference persistence (JSON / Postgres)
   observability/  error reporting + heartbeat (opt-in via env)
   screen/         filter schema, URL codec, applyScreen (+watchlist ctx), explainSymbol, CSV
+  compare/        transpose N contracts × metrics, best-in-row, CSV
+  diff/           diffSnapshots — added / dropped (+reason) / rank moves
 apps/
   screener-cli/   one-name · full-snapshot (+replay) · greek-xcheck
   api/            read-only snapshot server (walking skeleton)
