@@ -22,11 +22,11 @@ export async function POST(req: Request) {
   if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 });
   if (!body.snapshotRunId)
     return NextResponse.json({ error: 'snapshotRunId required' }, { status: 400 });
-  const bookmark = await getBookmarkStore().create(
-    uid,
+  const bookmark = await getBookmarkStore().create({
+    userId: uid,
     name,
-    body.snapshotRunId,
-    body.filterQuery ?? '',
-  );
+    snapshotRunId: body.snapshotRunId,
+    filterQuery: body.filterQuery ?? '',
+  });
   return NextResponse.json({ bookmark });
 }

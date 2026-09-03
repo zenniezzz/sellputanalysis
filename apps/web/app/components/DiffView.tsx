@@ -3,10 +3,12 @@
 import type { SnapshotDiff } from '../lib/diff';
 import { num } from '../lib/format';
 
-function delta(x: number, dp = 3): string {
-  if (!Number.isFinite(x) || x === 0) return '0';
+function delta(x: number | null | undefined, dp = 3): string {
+  if (x == null || !Number.isFinite(x) || x === 0) return '0';
   return `${x > 0 ? '+' : ''}${x.toFixed(dp)}`;
 }
+
+const sign = (x: number | null | undefined): 'pos' | 'neg' => ((x ?? 0) >= 0 ? 'pos' : 'neg');
 
 export function DiffView({ diff }: { diff: SnapshotDiff }) {
   return (
@@ -62,7 +64,7 @@ export function DiffView({ diff }: { diff: SnapshotDiff }) {
                   <td className="sym neg">{r.symbol}</td>
                   <td>{num(r.strike, 2)}</td>
                   <td>{r.expiration}</td>
-                  <td className="sym">{r.reason}</td>
+                  <td className="sym">{r.reason ?? '—'}</td>
                 </tr>
               ))}
             </tbody>
@@ -81,7 +83,7 @@ export function DiffView({ diff }: { diff: SnapshotDiff }) {
                 <th className="sym">Contract</th>
                 <th>Rank</th>
                 <th>Δ score</th>
-                <th>Δ EV</th>
+                <th>Δ EV/mL</th>
                 <th>Δ IV rank</th>
               </tr>
             </thead>
@@ -94,9 +96,9 @@ export function DiffView({ diff }: { diff: SnapshotDiff }) {
                     <td className={up ? 'pos' : 'neg'}>
                       {r.prevRank} {up ? '↑' : '↓'} {r.nextRank}
                     </td>
-                    <td className={r.scoreDelta >= 0 ? 'pos' : 'neg'}>{delta(r.scoreDelta)}</td>
-                    <td className={r.evDelta >= 0 ? 'pos' : 'neg'}>{delta(r.evDelta, 2)}</td>
-                    <td className={r.ivRankDelta >= 0 ? 'pos' : 'neg'}>{delta(r.ivRankDelta, 2)}</td>
+                    <td className={sign(r.scoreDelta)}>{delta(r.scoreDelta)}</td>
+                    <td className={sign(r.evToMaxlossDelta)}>{delta(r.evToMaxlossDelta, 3)}</td>
+                    <td className={sign(r.ivRankDelta)}>{delta(r.ivRankDelta, 1)}</td>
                   </tr>
                 );
               })}
