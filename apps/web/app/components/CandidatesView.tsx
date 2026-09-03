@@ -134,7 +134,7 @@ export function CandidatesView({ initial }: { initial: ScreenResponse }) {
   );
 }
 
+const FRACTION_KEYS = new Set(['maxSpreadPct', 'minAnnRoc', 'maxProbItm']);
 function formatRelax(key: string, to: number): string {
-  if (/Pct|Roc|ProbItm|Spread/.test(key)) return `${(to * 100).toFixed(0)}%`;
-  return String(to);
+  return FRACTION_KEYS.has(key) ? `${(to * 100).toFixed(0)}%` : String(to);
 }

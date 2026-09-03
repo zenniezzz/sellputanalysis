@@ -102,7 +102,8 @@ export const NUMERIC_FILTER_META: NumericFilterMeta[] = [
   { key: 'maxProbItm', label: 'Max P(ITM)', min: 0.05, max: 0.6, step: 0.01, unit: 'prob', group: 'risk' },
   { key: 'minOpenInterest', label: 'Min open interest', min: 0, max: 10000, step: 50, unit: 'int', group: 'liquidity' },
   { key: 'minVolume', label: 'Min volume (today)', min: 0, max: 5000, step: 25, unit: 'int', group: 'liquidity' },
-  { key: 'maxOrderSizeVsOiPct', label: 'Max order size vs OI %', min: 1, max: 50, step: 1, unit: 'pct', group: 'liquidity' },
+  // stored as a percent value (5 = 5%), not a fraction
+  { key: 'maxOrderSizeVsOiPct', label: 'Max order size vs OI (%)', min: 1, max: 50, step: 1, unit: 'int', group: 'liquidity' },
   { key: 'minIvRankOrPctile', label: 'Min IV rank / pctile', min: 0, max: 100, step: 1, unit: 'int', group: 'vol' },
   { key: 'minUnderlyingPrice', label: 'Min underlying price', min: 1, max: 1000, step: 1, unit: 'usd', group: 'universe' },
 ];

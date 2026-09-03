@@ -106,7 +106,7 @@ export function CandidatesTable({
                   </td>
                 ))}
                 <td className="sym">
-                  {r.expiration} {r.strike}P
+                  {r.expiration} {r.strike}P{' '}
                   {r.assignmentWatch && <span className="chip warn">assign</span>}
                   {flags.map((f) => (
                     <span key={f} className="chip">
