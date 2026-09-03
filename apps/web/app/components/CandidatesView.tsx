@@ -17,7 +17,10 @@ import { CompareView } from './CompareView';
 import { FilterPanel } from './FilterPanel';
 import { SavedScreens } from './SavedScreens';
 import { Scatter } from './Scatter';
+import { SnapshotsPanel } from './SnapshotsPanel';
 import { WhyNotHere } from './WhyNotHere';
+
+type View = 'candidates' | 'compare' | 'snapshots';
 
 export function CandidatesView({
   initial,
@@ -36,7 +39,8 @@ export function CandidatesView({
   const [highlightedOcc, setHighlightedOcc] = useState<string | null>(null);
   const [expandedOcc, setExpandedOcc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [view, setView] = useState<'candidates' | 'compare'>('candidates');
+  const [view, setView] = useState<View>('candidates');
+  const [freezeMsg, setFreezeMsg] = useState<string | null>(null);
   const { selected } = useCompareTray();
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
@@ -84,18 +88,33 @@ export function CandidatesView({
     [filters, run],
   );
 
-  const saveWatchlist = useCallback(async (symbols: string[]) => {
-    const res = await fetch('/api/watchlist', {
-      method: 'PUT',
+  const saveWatchlist = useCallback(
+    async (symbols: string[]) => {
+      const res = await fetch('/api/watchlist', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ symbols }),
+      });
+      const json = (await res.json()) as { symbols?: string[] };
+      if (json.symbols) {
+        setWatchlist(json.symbols);
+        run(filters);
+      }
+    },
+    [filters, run],
+  );
+
+  const freeze = useCallback(async () => {
+    const name = window.prompt('Freeze this screen as:');
+    if (!name?.trim()) return;
+    const res = await fetch('/api/bookmarks', {
+      method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ symbols }),
+      body: JSON.stringify({ name: name.trim(), snapshotRunId: data.meta.runId, filterQuery: query }),
     });
-    const json = (await res.json()) as { symbols?: string[] };
-    if (json.symbols) {
-      setWatchlist(json.symbols);
-      run(filters);
-    }
-  }, [filters, run]);
+    setFreezeMsg(res.ok ? `Frozen "${name.trim()}"` : 'Sign in to freeze screens');
+    setTimeout(() => setFreezeMsg(null), 4000);
+  }, [data.meta.runId, query]);
 
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
@@ -139,76 +158,95 @@ export function CandidatesView({
             <button className={view === 'compare' ? 'active' : ''} onClick={() => setView('compare')}>
               Compare ({selected.length})
             </button>
+            <button className={view === 'snapshots' ? 'active' : ''} onClick={() => setView('snapshots')}>
+              Snapshots
+            </button>
           </nav>
 
-          <div className="results-head">
-            <span className="count">{counts.visible.toLocaleString()} candidates</span>
-            <span className="sub">
-              of {counts.priced.toLocaleString()} priced · {counts.excluded.toLocaleString()} filtered out
-              {loading ? ' · …' : ''}
-            </span>
-            <span className="spacer" />
-            <SavedScreens
-              signedIn={!!user}
-              currentQuery={query}
-              onLoad={(q) => run(filtersFromQuery(new URLSearchParams(q)))}
-            />
-            <a className="btn" href={`/api/export?format=csv&${query}`}>
-              CSV
-            </a>
-            <a className="btn" href={`/api/export?format=json&${query}`}>
-              JSON
-            </a>
-          </div>
-
-          {view === 'compare' ? (
-            <CompareView rows={data.visible} selected={selected} />
+          {view === 'snapshots' ? (
+            <SnapshotsPanel signedIn={!!user} />
           ) : (
-          <>
-          {data.visible.length > 0 && (
-            <Scatter
-              rows={data.visible}
-              highlightedOcc={highlightedOcc}
-              onHover={setHighlightedOcc}
-              onSelect={(occ) => {
-                setExpandedOcc(occ);
-                setHighlightedOcc(occ);
-                requestAnimationFrame(() =>
-                  document.getElementById(`row-${occ.trim()}`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
-                );
-              }}
-            />
-          )}
-
-          {counts.visible === 0 && nearestMatches.length > 0 && (
-            <div className="nearest">
-              No matches. Nearest:{' '}
-              {nearestMatches.map((m, i) => (
-                <span key={m.key}>
-                  {i > 0 && ' · '}
-                  <button onClick={() => update({ [m.key]: m.to } as Partial<ScreenFilters>)}>
-                    relax {m.label} → {formatRelax(m.key, m.to)}
-                  </button>{' '}
-                  (+{m.adds})
+            <>
+              <div className="results-head">
+                <span className="count">{counts.visible.toLocaleString()} candidates</span>
+                <span className="sub">
+                  of {counts.priced.toLocaleString()} priced · {counts.excluded.toLocaleString()} filtered out
+                  {loading ? ' · …' : ''}
                 </span>
-              ))}
-            </div>
-          )}
+                <span className="spacer" />
+                {freezeMsg && (
+                  <span className="sub" style={{ color: 'var(--accent)' }}>
+                    {freezeMsg}
+                  </span>
+                )}
+                <button className="btn" onClick={freeze}>
+                  Freeze
+                </button>
+                <SavedScreens
+                  signedIn={!!user}
+                  currentQuery={query}
+                  onLoad={(q) => run(filtersFromQuery(new URLSearchParams(q)))}
+                />
+                <a className="btn" href={`/api/export?format=csv&${query}`}>
+                  CSV
+                </a>
+                <a className="btn" href={`/api/export?format=json&${query}`}>
+                  JSON
+                </a>
+              </div>
 
-          <CandidatesTable
-            rows={data.visible}
-            preset={filters.columns}
-            sort={filters.sort}
-            sortDir={filters.sortDir}
-            onSort={setSort}
-            highlightedOcc={highlightedOcc}
-            onHover={setHighlightedOcc}
-            expandedOcc={expandedOcc}
-            onToggleExpand={(occ) => setExpandedOcc((cur) => (cur === occ ? null : occ))}
-          />
+              {view === 'compare' ? (
+                <CompareView rows={data.visible} selected={selected} />
+              ) : (
+                <>
+                  {data.visible.length > 0 && (
+                    <Scatter
+                      rows={data.visible}
+                      highlightedOcc={highlightedOcc}
+                      onHover={setHighlightedOcc}
+                      onSelect={(occ) => {
+                        setExpandedOcc(occ);
+                        setHighlightedOcc(occ);
+                        requestAnimationFrame(() =>
+                          document
+                            .getElementById(`row-${occ.trim()}`)
+                            ?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
+                        );
+                      }}
+                    />
+                  )}
 
-          <WhyNotHere filters={filters} />
-          </>
+                  {counts.visible === 0 && nearestMatches.length > 0 && (
+                    <div className="nearest">
+                      No matches. Nearest:{' '}
+                      {nearestMatches.map((m, i) => (
+                        <span key={m.key}>
+                          {i > 0 && ' · '}
+                          <button onClick={() => update({ [m.key]: m.to } as Partial<ScreenFilters>)}>
+                            relax {m.label} → {formatRelax(m.key, m.to)}
+                          </button>{' '}
+                          (+{m.adds})
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <CandidatesTable
+                    rows={data.visible}
+                    preset={filters.columns}
+                    sort={filters.sort}
+                    sortDir={filters.sortDir}
+                    onSort={setSort}
+                    highlightedOcc={highlightedOcc}
+                    onHover={setHighlightedOcc}
+                    expandedOcc={expandedOcc}
+                    onToggleExpand={(occ) => setExpandedOcc((cur) => (cur === occ ? null : occ))}
+                  />
+
+                  <WhyNotHere filters={filters} />
+                </>
+              )}
+            </>
           )}
 
           <p className="disclaimer">

@@ -20,6 +20,15 @@ export interface SavedScreenDto {
   updatedAt: string;
 }
 
+export interface SnapshotBookmarkDto {
+  id: string;
+  userId: string | null;
+  name: string;
+  snapshotRunId: string;
+  filterQuery: string;
+  createdAt: string;
+}
+
 export interface ContractExplanationDto {
   occSymbol: string;
   strike: number;
