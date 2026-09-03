@@ -9,6 +9,7 @@ export default defineConfig({
       '@pss/pipeline': fileURLToPath(new URL('./packages/pipeline/src/index.ts', import.meta.url)),
       '@pss/store': fileURLToPath(new URL('./packages/store/src/index.ts', import.meta.url)),
       '@pss/observability': fileURLToPath(new URL('./packages/observability/src/index.ts', import.meta.url)),
+      '@pss/screen': fileURLToPath(new URL('./packages/screen/src/index.ts', import.meta.url)),
     },
   },
   test: {

@@ -10,3 +10,5 @@ coverage/
 .vitest/
 .claude/settings.local.json
 .data/
+
+.next/

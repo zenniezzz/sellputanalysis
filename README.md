@@ -3,7 +3,7 @@
 A daily screener for put-selling candidates. Full spec:
 [`put-sell-screener-plan.md`](./put-sell-screener-plan.md) (v3.0).
 
-## Status — M0 → M2.5 (see plan §12)
+## Status — M0 → M3 (see plan §12)
 
 | Deliverable | State |
 |---|---|
@@ -12,11 +12,13 @@ A daily screener for put-selling candidates. Full spec:
 | `@pss/pipeline` — stages A–H (`runSnapshot`): universe + filters, strike pre-filter, concurrency pool, DST-aware DTE, stage F smile/σ30/skew/IV-rank, **stage G composite score**, per-contract pricing/gating, cash-settled carve-out, status/completeness, greek cross-check, σ30 + metric history samples | ✅ mock + live |
 | `@pss/store` — `SnapshotStore` (JSON / PG + `schema.sql`); `IvHistoryStore`; **`MetricReferenceStore`** (rolling z_ref distributions); `FilePayloadStore` replay bundles; ORATS backfill importer | ✅ |
 | `@pss/observability` — Sentry-if-DSN error reporting; healthchecks.io-style heartbeat | ✅ |
-| `@pss/screener-cli` — `cli:one-name`, `cli:run-snapshot` (+`--as-of`), `cli:greek-xcheck` | ✅ |
-| `@pss/api` — framework-free read server: `GET /`, `/api/snapshots/latest`, `/:id` | ✅ walking skeleton |
-| CI | `ci.yml` (typecheck + 150 tests) · `nightly.yml` (live greek cross-check) |
+| `@pss/screen` — filter schema + URL codec (round-trip, clamp, band-repair) · `applyScreen` (live re-filter over persisted rows, per-basis ROC/capital) · `explainSymbol` ("why isn't X here") · nearest-match relaxations · CSV export | ✅ |
+| `@pss/screener-cli` — `cli:one-name`, `cli:run-snapshot` (+`--as-of`, `--preset`), `cli:greek-xcheck` | ✅ |
+| `@pss/api` — framework-free read server | ✅ walking skeleton |
+| **`@pss/web` — Next.js 14 app: Candidates table (sortable, 5 column presets), full §7 filter panel, URL-encoded state, zero-result nearest-match UX, "why isn't X here?", CSV/JSON export** | ✅ `npm run web` |
+| CI | `ci.yml` (typecheck + 168 tests + `next build`) · `nightly.yml` (live greek cross-check) |
 | ORATS 1-year IV backfill purchase | ⏳ M2 (data purchase — importer ready) |
-| Next.js Candidates table + filters + accounts | ⏭ M3 (Node 20 in place) |
+| Accounts + saved screens · scatter + Compare tab | ⏭ M3.5 / M4 |
 
 Verified on live CBOE data (10 names): `status=good`, 2,840 contracts priced,
 0 IV failures, greek cross-check **1.11%** median abs (SLO < 2%), 33 candidates
@@ -36,11 +38,13 @@ packages/
   options/        pure math — no I/O, no deps (dev-only cross-check vs `black-scholes`)
   market-data/    provider adapters behind one interface; record/replay
   pipeline/       runSnapshot — stages A–H, smile fit, IV rank
-  store/          snapshot + IV-history persistence (JSON / Postgres); replay bundles
+  store/          snapshot + IV-history + metric-reference persistence (JSON / Postgres)
   observability/  error reporting + heartbeat (opt-in via env)
+  screen/         filter schema, URL codec, applyScreen, explainSymbol, CSV
 apps/
   screener-cli/   one-name · full-snapshot (+replay) · greek-xcheck
   api/            read-only snapshot server (walking skeleton)
+  web/            Next.js 14 screener UI
 ```
 
 Monorepo via npm workspaces. Packages resolve as `@pss/*`; `tsx` and Vitest run
@@ -64,6 +68,9 @@ npm run cli:run-snapshot -- --as-of 2026-09-02-1000-scheduled  # replay a bundle
 
 # read server for the latest snapshot
 npm run api                                    # http://localhost:8787
+
+# the Next.js screener UI (reads .data/ or DATABASE_URL)
+npm run web                                    # http://localhost:3000
 ```
 
 Set `DATABASE_URL` to route the store and API through Postgres instead of

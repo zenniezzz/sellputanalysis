@@ -20,7 +20,9 @@ export interface PgQueryable {
   query(text: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[] }>;
 }
 
-const SCHEMA_PATH = fileURLToPath(new URL('./schema.sql', import.meta.url));
+function schemaPath(): string {
+  return fileURLToPath(new URL('./schema.sql', import.meta.url));
+}
 
 export class PgSnapshotStore implements SnapshotStore {
   constructor(private readonly db: PgQueryable) {}
@@ -32,7 +34,7 @@ export class PgSnapshotStore implements SnapshotStore {
   }
 
   async migrate(): Promise<void> {
-    await this.db.query(await readFile(SCHEMA_PATH, 'utf8'));
+    await this.db.query(await readFile(schemaPath(), 'utf8'));
   }
 
   async saveSnapshot(s: Snapshot): Promise<void> {

@@ -15,7 +15,10 @@
     "cli:one-name": "tsx apps/screener-cli/src/one-name.ts",
     "cli:run-snapshot": "tsx apps/screener-cli/src/run-snapshot.ts",
     "cli:greek-xcheck": "tsx apps/screener-cli/src/greek-xcheck.ts",
-    "api": "tsx apps/api/src/server.ts"
+    "api": "tsx apps/api/src/server.ts",
+    "web": "npm -w @pss/web run dev",
+    "web:build": "npm -w @pss/web run build",
+    "typecheck:web": "npm -w @pss/web run typecheck"
   },
   "devDependencies": {
     "@types/node": "^20.14.12",

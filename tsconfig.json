@@ -8,8 +8,10 @@
       "@pss/market-data": ["packages/market-data/src/index.ts"],
       "@pss/pipeline": ["packages/pipeline/src/index.ts"],
       "@pss/store": ["packages/store/src/index.ts"],
-      "@pss/observability": ["packages/observability/src/index.ts"]
+      "@pss/observability": ["packages/observability/src/index.ts"],
+      "@pss/screen": ["packages/screen/src/index.ts"]
     }
   },
-  "include": ["packages/**/*.ts", "apps/**/*.ts", "vitest.config.ts"]
+  "include": ["packages/**/*.ts", "apps/**/*.ts", "vitest.config.ts"],
+  "exclude": ["node_modules", "apps/web", "**/dist", "**/.next"]
 }
