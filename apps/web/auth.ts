@@ -60,6 +60,7 @@ if (DEV_LOGIN) {
 export const config: NextAuthConfig = {
   adapter: PssAdapter(getAuthStore()),
   session: { strategy: 'jwt' },
+  pages: { signIn: '/signin', error: '/signin' },
   providers,
   callbacks: {
     jwt({ token, user }) {
