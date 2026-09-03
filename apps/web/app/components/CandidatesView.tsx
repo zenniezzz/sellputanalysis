@@ -15,6 +15,7 @@ import { CandidatesTable } from './CandidatesTable';
 import { FilterPanel } from './FilterPanel';
 import { SavedScreens } from './SavedScreens';
 import { Scatter } from './Scatter';
+import { SnapshotsPanel } from './SnapshotsPanel';
 import { WhyNotHere } from './WhyNotHere';
 
 export function CandidatesView({
@@ -34,6 +35,8 @@ export function CandidatesView({
   const [highlightedOcc, setHighlightedOcc] = useState<string | null>(null);
   const [expandedOcc, setExpandedOcc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [view, setView] = useState<'candidates' | 'snapshots'>('candidates');
+  const [freezeMsg, setFreezeMsg] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -93,6 +96,18 @@ export function CandidatesView({
     }
   }, [filters, run]);
 
+  const freeze = useCallback(async () => {
+    const name = window.prompt('Freeze this screen as:');
+    if (!name?.trim()) return;
+    const res = await fetch('/api/bookmarks', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: name.trim(), snapshotRunId: data.meta.runId, filterQuery: query }),
+    });
+    setFreezeMsg(res.ok ? `Frozen "${name.trim()}"` : 'Sign in to freeze screens');
+    setTimeout(() => setFreezeMsg(null), 4000);
+  }, [data.meta.runId, query]);
+
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
   const { meta, run: ingestion, counts, nearestMatches } = data;
@@ -126,6 +141,29 @@ export function CandidatesView({
         </aside>
 
         <main>
+          <div className="tabs" role="tablist" style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+            <button
+              className="btn"
+              aria-selected={view === 'candidates'}
+              style={view === 'candidates' ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : undefined}
+              onClick={() => setView('candidates')}
+            >
+              Candidates
+            </button>
+            <button
+              className="btn"
+              aria-selected={view === 'snapshots'}
+              style={view === 'snapshots' ? { borderColor: 'var(--accent)', color: 'var(--accent)' } : undefined}
+              onClick={() => setView('snapshots')}
+            >
+              Snapshots
+            </button>
+          </div>
+
+          {view === 'snapshots' ? (
+            <SnapshotsPanel signedIn={!!user} />
+          ) : (
+          <>
           <div className="results-head">
             <span className="count">{counts.visible.toLocaleString()} candidates</span>
             <span className="sub">
@@ -133,6 +171,10 @@ export function CandidatesView({
               {loading ? ' · …' : ''}
             </span>
             <span className="spacer" />
+            {freezeMsg && <span className="sub" style={{ color: 'var(--accent)' }}>{freezeMsg}</span>}
+            <button className="btn" onClick={freeze}>
+              Freeze
+            </button>
             <SavedScreens
               signedIn={!!user}
               currentQuery={query}
@@ -194,6 +236,8 @@ export function CandidatesView({
             Screening tool, not investment advice. Selling puts — cash-secured or on margin — carries
             substantial loss potential if the underlying falls sharply. Data may be delayed.
           </p>
+          </>
+          )}
         </main>
       </div>
     </>
