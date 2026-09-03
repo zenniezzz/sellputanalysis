@@ -83,6 +83,16 @@ describe('applyScreen', () => {
     expect(res.visible.some((r) => r.symbol === 'BBB')).toBe(false);
   });
 
+  it('watchlistOnly restricts to the session watchlist', () => {
+    const base = { ...DEFAULT_FILTERS, minAnnRoc: 0, minIvRankOrPctile: 0 };
+    const all = applyScreen(rows, base);
+    const watched = applyScreen(rows, { ...base, watchlistOnly: true }, { watchlist: ['AAA', 'CCC'] });
+    expect(watched.visible.length).toBeLessThan(all.visible.length);
+    expect(new Set(watched.visible.map((r) => r.symbol))).toEqual(new Set(['AAA', 'CCC']));
+    // with no watchlist context, watchlistOnly yields nothing
+    expect(applyScreen(rows, { ...base, watchlistOnly: true }).counts.visible).toBe(0);
+  });
+
   it('reports the exclusion reason for a filtered-out contract', () => {
     const res = applyScreen(rows, { ...DEFAULT_FILTERS, deltaLo: 0.24, deltaHi: 0.26 });
     const [, reasons] = [...res.excludedBy.entries()][0]!;

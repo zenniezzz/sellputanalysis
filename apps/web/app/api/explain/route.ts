@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { explainSymbol, filtersFromQuery } from '@pss/screen';
 import { getStore } from '@/app/lib/store';
+import { screenContext } from '@/app/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,5 +15,9 @@ export async function GET(req: Request) {
   if (!snap) return NextResponse.json({ error: 'no snapshot' }, { status: 404 });
 
   const filters = filtersFromQuery(url.searchParams);
-  return NextResponse.json({ symbol: symbol.toUpperCase(), contracts: explainSymbol(snap.rows, symbol, filters) });
+  const ctx = await screenContext();
+  return NextResponse.json({
+    symbol: symbol.toUpperCase(),
+    contracts: explainSymbol(snap.rows, symbol, filters, ctx),
+  });
 }

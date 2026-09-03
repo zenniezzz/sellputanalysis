@@ -1,36 +1,55 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { DEFAULT_FILTERS, filtersToQuery, type ScreenFilters, type SortKey } from '@pss/screen';
+import {
+  DEFAULT_FILTERS,
+  filtersFromQuery,
+  filtersToQuery,
+  type ScreenFilters,
+  type SortKey,
+} from '@pss/screen';
 import type { ScreenResponse } from '../lib/types';
-import { FilterPanel } from './FilterPanel';
+import { AccountBar } from './AccountBar';
 import { CandidatesTable } from './CandidatesTable';
+import { FilterPanel } from './FilterPanel';
+import { SavedScreens } from './SavedScreens';
 import { WhyNotHere } from './WhyNotHere';
 
-export function CandidatesView({ initial }: { initial: ScreenResponse }) {
+export function CandidatesView({
+  initial,
+  user,
+  watchlist: initialWatchlist,
+}: {
+  initial: ScreenResponse;
+  user: { email: string | null } | null;
+  watchlist: string[];
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [data, setData] = useState<ScreenResponse>(initial);
   const [filters, setFilters] = useState<ScreenFilters>(initial.filters);
+  const [watchlist, setWatchlist] = useState<string[]>(initialWatchlist);
   const [loading, setLoading] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
+  const query = useMemo(() => filtersToQuery(filters).toString(), [filters]);
+
   const run = useCallback(
     (next: ScreenFilters) => {
-      const query = filtersToQuery(next).toString();
-      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-
+      const q = filtersToQuery(next).toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
       abortRef.current?.abort();
       const ac = new AbortController();
       abortRef.current = ac;
       setLoading(true);
-      fetch(`/api/screen?${query}`, { signal: ac.signal })
+      fetch(`/api/screen?${q}`, { signal: ac.signal })
         .then((r) => r.json())
         .then((json: ScreenResponse) => {
           setData(json);
           setFilters(json.filters);
+          setWatchlist(json.watchlist);
         })
         .catch((e) => {
           if ((e as Error).name !== 'AbortError') console.error(e);
@@ -50,8 +69,6 @@ export function CandidatesView({ initial }: { initial: ScreenResponse }) {
     [filters, run],
   );
 
-  const reset = useCallback(() => run(DEFAULT_FILTERS), [run]);
-
   const setSort = useCallback(
     (key: SortKey) => {
       const dir = filters.sort === key && filters.sortDir === 'desc' ? 'asc' : 'desc';
@@ -59,6 +76,19 @@ export function CandidatesView({ initial }: { initial: ScreenResponse }) {
     },
     [filters, run],
   );
+
+  const saveWatchlist = useCallback(async (symbols: string[]) => {
+    const res = await fetch('/api/watchlist', {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ symbols }),
+    });
+    const json = (await res.json()) as { symbols?: string[] };
+    if (json.symbols) {
+      setWatchlist(json.symbols);
+      run(filters);
+    }
+  }, [filters, run]);
 
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
@@ -76,11 +106,20 @@ export function CandidatesView({ initial }: { initial: ScreenResponse }) {
         {ingestion.greekXcheckMedianAbsPct != null && (
           <span className="badge">Δ x-check {ingestion.greekXcheckMedianAbsPct.toFixed(2)}%</span>
         )}
+        <span style={{ flex: 1 }} />
+        <AccountBar email={user?.email ?? null} />
       </div>
 
       <div className="layout">
         <aside className="panel filters">
-          <FilterPanel filters={filters} onChange={update} onReset={reset} />
+          <FilterPanel
+            filters={filters}
+            onChange={update}
+            onReset={() => run(DEFAULT_FILTERS)}
+            signedIn={!!user}
+            watchlist={watchlist}
+            onWatchlistChange={saveWatchlist}
+          />
         </aside>
 
         <main>
@@ -91,10 +130,15 @@ export function CandidatesView({ initial }: { initial: ScreenResponse }) {
               {loading ? ' · …' : ''}
             </span>
             <span className="spacer" />
-            <a className="btn" href={`/api/export?format=csv&${filtersToQuery(filters).toString()}`}>
+            <SavedScreens
+              signedIn={!!user}
+              currentQuery={query}
+              onLoad={(q) => run(filtersFromQuery(new URLSearchParams(q)))}
+            />
+            <a className="btn" href={`/api/export?format=csv&${query}`}>
               CSV
             </a>
-            <a className="btn" href={`/api/export?format=json&${filtersToQuery(filters).toString()}`}>
+            <a className="btn" href={`/api/export?format=json&${query}`}>
               JSON
             </a>
           </div>

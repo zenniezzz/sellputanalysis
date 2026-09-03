@@ -3,6 +3,11 @@
 import type { SnapshotRow } from '@pss/pipeline';
 import { NUMERIC_FILTER_META, type ScreenFilters, type SortKey } from './filters.js';
 
+/** Session context supplied by the app — the signed-in user's watchlist, etc. */
+export interface ScreenContext {
+  watchlist?: string[];
+}
+
 export interface ScreenedRow extends SnapshotRow {
   displayCapital100: number | null;
   displayAnnRoc: number | null;
@@ -57,8 +62,14 @@ interface Predicate {
   pass: (r: ScreenedRow) => boolean;
 }
 
-function predicates(f: ScreenFilters): Predicate[] {
+function predicates(f: ScreenFilters, ctx: ScreenContext): Predicate[] {
+  const watchlist = new Set((ctx.watchlist ?? []).map((s) => s.toUpperCase()));
   return [
+    {
+      key: 'watchlistOnly',
+      label: 'in watchlist',
+      pass: (r) => !f.watchlistOnly || watchlist.has(r.symbol.toUpperCase()),
+    },
     { key: 'minUnderlyingPrice', label: `underlying ≥ $${f.minUnderlyingPrice}`, pass: (r) => r.spot >= f.minUnderlyingPrice },
     { key: 'dteMin', label: `DTE ≥ ${f.dteMin}`, pass: (r) => r.dte >= f.dteMin },
     { key: 'dteMax', label: `DTE ≤ ${f.dteMax}`, pass: (r) => r.dte <= f.dteMax },
@@ -134,9 +145,9 @@ function sortValue(r: ScreenedRow, key: SortKey): number | string {
   }
 }
 
-export function applyScreen(rows: SnapshotRow[], f: ScreenFilters): ScreenResult {
+export function applyScreen(rows: SnapshotRow[], f: ScreenFilters, ctx: ScreenContext = {}): ScreenResult {
   const priced = rows.filter((r) => r.iv != null).map((r) => displayFields(r, f));
-  const preds = predicates(f);
+  const preds = predicates(f, ctx);
   const excludedBy = new Map<string, string[]>();
   const visible: ScreenedRow[] = [];
 
@@ -158,12 +169,12 @@ export function applyScreen(rows: SnapshotRow[], f: ScreenFilters): ScreenResult
     visible,
     excludedBy,
     counts: { priced: priced.length, visible: visible.length, excluded: excludedBy.size },
-    nearestMatches: computeNearestMatches(priced, f),
+    nearestMatches: computeNearestMatches(priced, f, ctx),
   };
 }
 
-function computeNearestMatches(priced: ScreenedRow[], f: ScreenFilters): NearestMatch[] {
-  const baseline = applyCount(priced, f);
+function computeNearestMatches(priced: ScreenedRow[], f: ScreenFilters, ctx: ScreenContext): NearestMatch[] {
+  const baseline = applyCount(priced, f, ctx);
   const out: NearestMatch[] = [];
 
   for (const meta of NUMERIC_FILTER_META) {
@@ -173,14 +184,14 @@ function computeNearestMatches(priced: ScreenedRow[], f: ScreenFilters): Nearest
     const relaxed = meta.key.startsWith('max') || meta.key === 'deltaHi' ? meta.max : meta.min;
     if (relaxed === current) continue;
     const trial = { ...f, [meta.key]: relaxed } as ScreenFilters;
-    const adds = applyCount(priced, trial) - baseline;
+    const adds = applyCount(priced, trial, ctx) - baseline;
     if (adds > 0) out.push({ key: meta.key, label: meta.label, from: current, to: relaxed, adds });
   }
   return out.sort((a, b) => b.adds - a.adds).slice(0, 3);
 }
 
-function applyCount(priced: ScreenedRow[], f: ScreenFilters): number {
-  const preds = predicates(f);
+function applyCount(priced: ScreenedRow[], f: ScreenFilters, ctx: ScreenContext): number {
+  const preds = predicates(f, ctx);
   const withFields = priced.map((r) => displayFields(r, f));
   return withFields.filter((r) => preds.every((p) => p.pass(r))).length;
 }
@@ -195,9 +206,14 @@ export interface ContractExplanation {
   pipelineExclusion: string | null;
 }
 
-export function explainSymbol(rows: SnapshotRow[], symbol: string, f: ScreenFilters): ContractExplanation[] {
+export function explainSymbol(
+  rows: SnapshotRow[],
+  symbol: string,
+  f: ScreenFilters,
+  ctx: ScreenContext = {},
+): ContractExplanation[] {
   const sym = symbol.trim().toUpperCase();
-  const preds = predicates(f);
+  const preds = predicates(f, ctx);
   return rows
     .filter((r) => r.symbol.toUpperCase() === sym)
     .map((r) => {

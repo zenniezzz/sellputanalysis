@@ -1,5 +1,6 @@
 import { applyScreen, filtersFromQuery, screenedRowsToCsv } from '@pss/screen';
 import { getStore } from '@/app/lib/store';
+import { screenContext } from '@/app/lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,7 +12,7 @@ export async function GET(req: Request) {
 
   const format = url.searchParams.get('format') ?? 'csv';
   const filters = filtersFromQuery(url.searchParams);
-  const result = applyScreen(snap.rows, filters);
+  const result = applyScreen(snap.rows, filters, await screenContext());
   const stamp = snap.meta.runId;
 
   if (format === 'json') {

@@ -15,10 +15,16 @@ export function FilterPanel({
   filters,
   onChange,
   onReset,
+  signedIn,
+  watchlist,
+  onWatchlistChange,
 }: {
   filters: ScreenFilters;
   onChange: (patch: Partial<ScreenFilters>) => void;
   onReset: () => void;
+  signedIn: boolean;
+  watchlist: string[];
+  onWatchlistChange: (symbols: string[]) => void;
 }) {
   const numField = (m: NumericFilterMeta) => {
     const value = filters[m.key] as number;
@@ -129,6 +135,35 @@ export function FilterPanel({
           </section>
         );
       })}
+
+      <section>
+        <h3>Watchlist</h3>
+        <div className="field check">
+          <input
+            id="watchlistOnly"
+            type="checkbox"
+            checked={filters.watchlistOnly}
+            disabled={!signedIn}
+            onChange={(e) => onChange({ watchlistOnly: e.target.checked })}
+          />
+          <label htmlFor="watchlistOnly">Watchlist only{!signedIn && ' (sign in)'}</label>
+        </div>
+        {signedIn && (
+          <div className="field">
+            <label>My watchlist ({watchlist.length})</label>
+            <input
+              type="text"
+              defaultValue={watchlist.join(',')}
+              placeholder="NVDA,AAPL,SPY"
+              onBlur={(e) =>
+                onWatchlistChange(
+                  e.target.value.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean),
+                )
+              }
+            />
+          </div>
+        )}
+      </section>
 
       <section>
         <h3>Exclusions</h3>

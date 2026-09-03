@@ -158,6 +158,51 @@ create table if not exists raw_payload_manifest (
   primary key (run_id, symbol, kind)
 );
 
+-- Accounts + per-user data (plan §9.3, M3.5). Auth.js JWT session strategy, so
+-- no `session` table; verification tokens back the email-magic-link flow.
+create extension if not exists citext;
+
+create table if not exists app_user (
+  id             uuid primary key,
+  email          citext unique not null,
+  name           text,
+  image          text,
+  email_verified timestamptz
+);
+
+create table if not exists account (
+  user_id             uuid not null references app_user(id) on delete cascade,
+  type                text not null,
+  provider            text not null,
+  provider_account_id text not null,
+  refresh_token text, access_token text, expires_at bigint,
+  token_type text, scope text, id_token text,
+  primary key (provider, provider_account_id)
+);
+
+create table if not exists verification_token (
+  identifier text not null,
+  token      text not null,
+  expires    timestamptz not null,
+  primary key (identifier, token)
+);
+
+create table if not exists saved_screen (
+  id         uuid primary key,
+  user_id    uuid not null references app_user(id) on delete cascade,
+  name       text not null,
+  query      text not null,
+  created_at timestamptz not null,
+  updated_at timestamptz not null,
+  unique (user_id, name)
+);
+
+create table if not exists watchlist_symbol (
+  user_id uuid not null references app_user(id) on delete cascade,
+  symbol  text not null,
+  primary key (user_id, symbol)
+);
+
 -- Partitioning note (plan §9.5): at production scale `snapshot_row` is
 -- range-partitioned monthly on `snapshot_day`, e.g.
 --   alter table snapshot_row ... partition by range (snapshot_day);

@@ -18,3 +18,18 @@ export {
   type DailyMetricAgg,
 } from './metric-reference.js';
 export { PgMetricReferenceStore } from './pg/metric-reference.js';
+export {
+  JsonAuthStore,
+  type AuthStore,
+  type AuthUser,
+  type AuthAccount,
+  type VerificationToken,
+} from './auth.js';
+export { PgAuthStore } from './pg/auth.js';
+export {
+  JsonUserDataStore,
+  type UserDataStore,
+  type UserData,
+  type SavedScreen,
+} from './userdata.js';
+export { PgUserDataStore } from './pg/userdata.js';

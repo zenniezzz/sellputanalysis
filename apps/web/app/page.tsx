@@ -2,6 +2,7 @@ import { applyScreen, filtersFromQuery } from '@pss/screen';
 import { CandidatesView } from './components/CandidatesView';
 import { getStore } from './lib/store';
 import { searchParamsToUrl } from './lib/format';
+import { currentUser, screenContext } from './lib/session';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,14 +27,19 @@ export default async function Page({
   }
 
   const filters = filtersFromQuery(searchParamsToUrl(searchParams));
-  const result = applyScreen(snap.rows, filters);
+  const ctx = await screenContext();
+  const result = applyScreen(snap.rows, filters, ctx);
+  const user = await currentUser();
 
   return (
     <CandidatesView
+      user={user ? { email: user.email ?? null } : null}
+      watchlist={ctx.watchlist ?? []}
       initial={{
         meta: snap.meta,
         run: snap.run,
         filters,
+        watchlist: ctx.watchlist ?? [],
         visible: result.visible,
         counts: result.counts,
         nearestMatches: result.nearestMatches,

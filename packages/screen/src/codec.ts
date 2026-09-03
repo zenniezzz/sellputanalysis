@@ -65,6 +65,7 @@ export function filtersFromQuery(params: URLSearchParams): ScreenFilters {
     hideDividend: asBool(params.get('hideDividend'), DEFAULT_FILTERS.hideDividend),
     hideBelowParity: asBool(params.get('hideBelowParity'), DEFAULT_FILTERS.hideBelowParity),
     hideIvProxy: asBool(params.get('hideIvProxy'), DEFAULT_FILTERS.hideIvProxy),
+    watchlistOnly: asBool(params.get('watchlistOnly'), DEFAULT_FILTERS.watchlistOnly),
     sort: asEnum<SortKey>(params.get('sort'), SORT_KEYS, DEFAULT_FILTERS.sort),
     sortDir: asEnum<SortDir>(params.get('sortDir'), ['asc', 'desc'], DEFAULT_FILTERS.sortDir),
     columns: asEnum<ColumnPreset>(params.get('columns'), ['essentials', 'greeks', 'risk', 'returns', 'all'], DEFAULT_FILTERS.columns),

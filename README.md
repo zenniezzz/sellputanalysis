@@ -3,22 +3,22 @@
 A daily screener for put-selling candidates. Full spec:
 [`put-sell-screener-plan.md`](./put-sell-screener-plan.md) (v3.0).
 
-## Status — M0 → M3 (see plan §12)
+## Status — M0 → M3.5 (see plan §12)
 
 | Deliverable | State |
 |---|---|
 | `@pss/options` — BSM + greeks, IV solver, forecast EV, fill model, IV rank/percentile + HV proxy, smile fit + LOO residual + σ30 + put skew, **composite score (3 presets, z_ref blend, NULL renorm, fixed colour domain)** | ✅ full §5.9 suite |
 | `@pss/market-data` — `MarketData`/`RatesSource` + `Result<T>`; CBOE adapter; **par→zero bootstrap**; Stooq HV; **record/replay wrappers** | ✅ |
 | `@pss/pipeline` — stages A–H (`runSnapshot`): universe + filters, strike pre-filter, concurrency pool, DST-aware DTE, stage F smile/σ30/skew/IV-rank, **stage G composite score**, per-contract pricing/gating, cash-settled carve-out, status/completeness, greek cross-check, σ30 + metric history samples | ✅ mock + live |
-| `@pss/store` — `SnapshotStore` (JSON / PG + `schema.sql`); `IvHistoryStore`; **`MetricReferenceStore`** (rolling z_ref distributions); `FilePayloadStore` replay bundles; ORATS backfill importer | ✅ |
+| `@pss/store` — `SnapshotStore` · `IvHistoryStore` · `MetricReferenceStore` · **`AuthStore`** (Auth.js adapter data) · **`UserDataStore`** (saved screens + watchlists) — JSON + Postgres each; `FilePayloadStore` replay bundles; ORATS importer | ✅ |
 | `@pss/observability` — Sentry-if-DSN error reporting; healthchecks.io-style heartbeat | ✅ |
 | `@pss/screen` — filter schema + URL codec (round-trip, clamp, band-repair) · `applyScreen` (live re-filter over persisted rows, per-basis ROC/capital) · `explainSymbol` ("why isn't X here") · nearest-match relaxations · CSV export | ✅ |
 | `@pss/screener-cli` — `cli:one-name`, `cli:run-snapshot` (+`--as-of`, `--preset`), `cli:greek-xcheck` | ✅ |
 | `@pss/api` — framework-free read server | ✅ walking skeleton |
-| **`@pss/web` — Next.js 14 app: Candidates table (sortable, 5 column presets), full §7 filter panel, URL-encoded state, zero-result nearest-match UX, "why isn't X here?", CSV/JSON export** | ✅ `npm run web` |
-| CI | `ci.yml` (typecheck + 168 tests + `next build`) · `nightly.yml` (live greek cross-check) |
+| **`@pss/web` — Next.js 14 app**: Candidates table (sortable, 5 column presets), full §7 filter panel, URL-encoded state, zero-result nearest-match UX, "why isn't X here?", CSV/JSON export · **Auth.js accounts (email magic-link + dev login + optional Google), saved screens, watchlists** | ✅ `npm run web` |
+| CI | `ci.yml` (typecheck ×2 + 177 tests + `next build`) · `nightly.yml` (live greek cross-check) |
 | ORATS 1-year IV backfill purchase | ⏳ M2 (data purchase — importer ready) |
-| Accounts + saved screens · scatter + Compare tab | ⏭ M3.5 / M4 |
+| Scatter + Compare tab | ⏭ M4 |
 
 Verified on live CBOE data (10 names): `status=good`, 2,840 contracts priced,
 0 IV failures, greek cross-check **1.11%** median abs (SLO < 2%), 33 candidates
@@ -40,11 +40,11 @@ packages/
   pipeline/       runSnapshot — stages A–H, smile fit, IV rank
   store/          snapshot + IV-history + metric-reference persistence (JSON / Postgres)
   observability/  error reporting + heartbeat (opt-in via env)
-  screen/         filter schema, URL codec, applyScreen, explainSymbol, CSV
+  screen/         filter schema, URL codec, applyScreen (+watchlist ctx), explainSymbol, CSV
 apps/
   screener-cli/   one-name · full-snapshot (+replay) · greek-xcheck
   api/            read-only snapshot server (walking skeleton)
-  web/            Next.js 14 screener UI
+  web/            Next.js 14 screener UI + Auth.js
 ```
 
 Monorepo via npm workspaces. Packages resolve as `@pss/*`; `tsx` and Vitest run
@@ -70,8 +70,14 @@ npm run cli:run-snapshot -- --as-of 2026-09-02-1000-scheduled  # replay a bundle
 npm run api                                    # http://localhost:8787
 
 # the Next.js screener UI (reads .data/ or DATABASE_URL)
+cp apps/web/.env.example apps/web/.env.local && $EDITOR apps/web/.env.local   # set AUTH_SECRET
 npm run web                                    # http://localhost:3000
 ```
+
+Sign in with the **Dev login** provider (any email, dev only) or the **Email**
+provider — the magic link is printed to the server console and appended to
+`.data/auth/magic-links.log`. Saved screens and watchlists persist under
+`.data/auth` / `.data/userdata` (or Postgres when `DATABASE_URL` is set).
 
 Set `DATABASE_URL` to route the store and API through Postgres instead of
 `.data/` JSON files (applies `packages/store/src/pg/schema.sql`).

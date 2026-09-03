@@ -19,6 +19,7 @@ export {
   isMonthlyExpiration,
   type ScreenedRow,
   type ScreenResult,
+  type ScreenContext,
   type NearestMatch,
   type ContractExplanation,
 } from './apply.js';

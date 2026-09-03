@@ -42,6 +42,8 @@ export interface ScreenFilters {
   hideDividend: boolean;
   hideBelowParity: boolean;
   hideIvProxy: boolean;
+  /** Restrict to the signed-in user's watchlist (context supplied to applyScreen). */
+  watchlistOnly: boolean;
   sort: SortKey;
   sortDir: SortDir;
   columns: ColumnPreset;
@@ -74,6 +76,7 @@ export const DEFAULT_FILTERS: ScreenFilters = {
   hideDividend: false,
   hideBelowParity: true,
   hideIvProxy: false,
+  watchlistOnly: false,
   sort: 'score',
   sortDir: 'desc',
   columns: 'essentials',
