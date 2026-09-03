@@ -12,6 +12,8 @@ import {
 import type { ScreenResponse } from '../lib/types';
 import { AccountBar } from './AccountBar';
 import { CandidatesTable } from './CandidatesTable';
+import { CompareTray, useCompareTray } from './CompareTray';
+import { CompareView } from './CompareView';
 import { FilterPanel } from './FilterPanel';
 import { SavedScreens } from './SavedScreens';
 import { Scatter } from './Scatter';
@@ -34,6 +36,8 @@ export function CandidatesView({
   const [highlightedOcc, setHighlightedOcc] = useState<string | null>(null);
   const [expandedOcc, setExpandedOcc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [view, setView] = useState<'candidates' | 'compare'>('candidates');
+  const { selected } = useCompareTray();
   const abortRef = useRef<AbortController | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
@@ -113,6 +117,8 @@ export function CandidatesView({
         <AccountBar email={user?.email ?? null} />
       </div>
 
+      <CompareTray rows={data.visible} />
+
       <div className="layout">
         <aside className="panel filters">
           <FilterPanel
@@ -126,6 +132,15 @@ export function CandidatesView({
         </aside>
 
         <main>
+          <nav className="tabnav">
+            <button className={view === 'candidates' ? 'active' : ''} onClick={() => setView('candidates')}>
+              Candidates
+            </button>
+            <button className={view === 'compare' ? 'active' : ''} onClick={() => setView('compare')}>
+              Compare ({selected.length})
+            </button>
+          </nav>
+
           <div className="results-head">
             <span className="count">{counts.visible.toLocaleString()} candidates</span>
             <span className="sub">
@@ -146,6 +161,10 @@ export function CandidatesView({
             </a>
           </div>
 
+          {view === 'compare' ? (
+            <CompareView rows={data.visible} selected={selected} />
+          ) : (
+          <>
           {data.visible.length > 0 && (
             <Scatter
               rows={data.visible}
@@ -189,6 +208,8 @@ export function CandidatesView({
           />
 
           <WhyNotHere filters={filters} />
+          </>
+          )}
 
           <p className="disclaimer">
             Screening tool, not investment advice. Selling puts — cash-secured or on margin — carries
