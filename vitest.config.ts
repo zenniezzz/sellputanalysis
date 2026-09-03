@@ -10,6 +10,8 @@ export default defineConfig({
       '@pss/store': fileURLToPath(new URL('./packages/store/src/index.ts', import.meta.url)),
       '@pss/observability': fileURLToPath(new URL('./packages/observability/src/index.ts', import.meta.url)),
       '@pss/screen': fileURLToPath(new URL('./packages/screen/src/index.ts', import.meta.url)),
+      '@pss/compare': fileURLToPath(new URL('./packages/compare/src/index.ts', import.meta.url)),
+      '@pss/diff': fileURLToPath(new URL('./packages/diff/src/index.ts', import.meta.url)),
     },
   },
   test: {
