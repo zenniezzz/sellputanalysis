@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { COLUMN_PRESETS, type ColumnPreset, type ScreenedRow, type SortDir, type SortKey } from '@pss/screen';
 import { num, pct, usd, usd0, int } from '../lib/format';
 import { RowDetail } from './RowDetail';
+import { useCompareTray } from './CompareTray';
 
 interface Col {
   key: SortKey;
@@ -79,6 +80,7 @@ export function CandidatesTable({
   onToggleExpand: (occ: string) => void;
 }) {
   const cols = COLUMN_PRESETS[preset].map((k) => COLS[k]);
+  const { toggle, isSelected } = useCompareTray();
 
   if (rows.length === 0) {
     return <div className="empty">No candidates match the current filters.</div>;
@@ -89,6 +91,7 @@ export function CandidatesTable({
       <table className="grid">
         <thead>
           <tr>
+            <th className="ck" title="add to Compare" aria-label="compare" />
             {cols.map((c) => (
               <th
                 key={c.key}
@@ -121,6 +124,14 @@ export function CandidatesTable({
                     background: r.occSymbol === highlightedOcc ? 'var(--panel-2)' : undefined,
                   }}
                 >
+                  <td className="ck" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      aria-label={`compare ${r.symbol} ${r.expiration} ${r.strike}P`}
+                      checked={isSelected(r.occSymbol)}
+                      onChange={() => toggle(r.occSymbol)}
+                    />
+                  </td>
                   {cols.map((c) => (
                     <td key={c.key} className={`${c.key === 'symbol' ? 'sym' : ''} ${c.cls?.(r) ?? ''}`}>
                       {c.render(r)}
@@ -139,7 +150,7 @@ export function CandidatesTable({
                 </tr>
                 {expanded && (
                   <tr>
-                    <td colSpan={cols.length + 1} style={{ padding: 0, textAlign: 'left' }}>
+                    <td colSpan={cols.length + 2} style={{ padding: 0, textAlign: 'left' }}>
                       <RowDetail row={r} />
                     </td>
                   </tr>

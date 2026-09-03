@@ -117,5 +117,32 @@ table.grid td.pos { color: var(--accent); }
 .explain .ok { color: var(--accent); }
 .explain .fail { color: var(--bad); }
 
+.tabnav { display: flex; gap: 4px; margin-bottom: 8px; }
+.tabnav button {
+  background: transparent; border: 1px solid var(--border); color: var(--ink-dim);
+  border-radius: 4px; padding: 4px 12px; cursor: pointer; font-size: 12px;
+}
+.tabnav button:hover { color: var(--ink); }
+.tabnav button.active { color: var(--accent); border-color: var(--accent-dim); background: var(--panel); }
+
+.compare-tray {
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 6px 10px; margin-bottom: 12px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px; font-size: 12px;
+}
+.compare-tray .ct-label { color: var(--ink-faint); text-transform: uppercase; letter-spacing: .06em; font-size: 11px; }
+.compare-tray .ct-empty { color: var(--ink-faint); }
+.compare-tray .ct-chip {
+  display: inline-flex; align-items: center; gap: 3px;
+  background: var(--panel-2); border: 1px solid var(--border); border-radius: 4px;
+  padding: 1px 3px 1px 6px; font: 11px var(--mono);
+}
+.compare-tray .ct-chip button { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 13px; line-height: 1; padding: 0 2px; }
+.compare-tray .ct-chip button:hover { color: var(--bad); }
+.compare-tray .ct-clear { background: none; border: none; color: var(--accent); cursor: pointer; font-size: 12px; }
+
+.compare-view { margin-bottom: 12px; }
+table.grid td.ck, table.grid th.ck { text-align: center; width: 26px; padding-left: 4px; padding-right: 4px; }
+
 .empty { padding: 40px; text-align: center; color: var(--ink-dim); }
 .disclaimer { margin-top: 24px; color: var(--ink-faint); font-size: 11px; max-width: 70ch; }
