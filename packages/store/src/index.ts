@@ -11,6 +11,20 @@ export {
 export { PgIvHistoryStore } from './pg/iv-history.js';
 export { parseOratsIvHistoryCsv, normalizeDate } from './iv-backfill.js';
 export {
+  JsonFrozenComparisonStore,
+  type FrozenComparisonStore,
+  type FrozenComparison,
+  type FrozenComparisonInput,
+} from './frozen-comparison.js';
+export { PgFrozenComparisonStore } from './pg/frozen-comparison.js';
+export {
+  JsonSnapshotBookmarkStore,
+  type SnapshotBookmarkStore,
+  type SnapshotBookmark,
+  type SnapshotBookmarkInput,
+} from './snapshot-bookmark.js';
+export { PgSnapshotBookmarkStore } from './pg/snapshot-bookmark.js';
+export {
   JsonMetricReferenceStore,
   rollUp,
   aggregate,

@@ -12,3 +12,5 @@ coverage/
 .data/
 
 .next/
+
+.claude/worktrees/

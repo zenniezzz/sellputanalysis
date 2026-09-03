@@ -204,6 +204,25 @@ create table if not exists watchlist_symbol (
   primary key (user_id, symbol)
 );
 
+-- Frozen side-by-side comparisons + snapshot bookmarks (plan §8.4, §8.5, M4.5/M5).
+create table if not exists frozen_comparison (
+  id              uuid primary key,
+  user_id         uuid,
+  snapshot_run_id text not null,
+  occ_symbols     text[] not null,
+  created_at      timestamptz not null
+);
+
+create table if not exists snapshot_bookmark (
+  id              uuid primary key,
+  user_id         uuid,
+  name            text not null,
+  snapshot_run_id text not null,
+  filter_query    text not null default '',
+  created_at      timestamptz not null
+);
+create index if not exists snapshot_bookmark_user_idx on snapshot_bookmark (user_id, created_at desc);
+
 -- Partitioning note (plan §9.5): at production scale `snapshot_row` is
 -- range-partitioned monthly on `snapshot_day`, e.g.
 --   alter table snapshot_row ... partition by range (snapshot_day);
