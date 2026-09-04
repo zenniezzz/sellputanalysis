@@ -13,14 +13,14 @@
     "@pss/pipeline": "*",
     "@pss/screen": "*",
     "@pss/store": "*",
-    "next": "^14.2.15",
+    "@pss/tracker": "*",
+    "next": "^15.5.25",
     "next-auth": "5.0.0-beta.32",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "@pss/tracker": "*"
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
   },
   "devDependencies": {
-    "@types/react": "^18.3.11",
-    "@types/react-dom": "^18.3.0"
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7"
   }
 }

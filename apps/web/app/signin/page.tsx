@@ -2,11 +2,12 @@ import { SignInForm } from './SignInForm';
 
 export const dynamic = 'force-dynamic';
 
-export default function SignInPage({
+export default async function SignInPage({
   searchParams,
 }: {
-  searchParams: { callbackUrl?: string; error?: string };
+  searchParams: Promise<{ callbackUrl?: string; error?: string }>;
 }) {
+  const sp = await searchParams;
   const providers = {
     email: true,
     dev: process.env.NODE_ENV !== 'production' || process.env.ALLOW_DEV_LOGIN === '1',
@@ -20,8 +21,8 @@ export default function SignInPage({
       </p>
       <SignInForm
         providers={providers}
-        callbackUrl={searchParams.callbackUrl ?? '/'}
-        error={searchParams.error ?? null}
+        callbackUrl={sp.callbackUrl ?? '/'}
+        error={sp.error ?? null}
       />
     </div>
   );

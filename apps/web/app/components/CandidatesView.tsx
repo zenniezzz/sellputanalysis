@@ -48,7 +48,7 @@ export function CandidatesView({
   const [freezeMsg, setFreezeMsg] = useState<string | null>(null);
   const { selected } = useCompareTray();
   const abortRef = useRef<AbortController | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const query = useMemo(() => filtersToQuery(filters).toString(), [filters]);
 

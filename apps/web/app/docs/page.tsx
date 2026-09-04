@@ -3,7 +3,7 @@ import Link from 'next/link';
 export const metadata = { title: 'API — Put-Sell Screener' };
 
 const rows: [string, string][] = [
-  ['GET /api/screen', 'Screened candidates for the latest snapshot. Accepts every filter param (see the URL of a filtered screen). Pagination: ?limit & ?cursor → { visible, nextCursor }. Also returns meta, run, counts, nearestMatches, excludedBy.'],
+  ['GET /api/screen', 'Screened candidates for the latest snapshot. Accepts every filter param (see the URL of a filtered screen). Pagination: ?limit & ?cursor → { visible, nextCursor }. Also returns meta, run, counts, nearestMatches. Per-contract exclusion reasons are not included here — use /api/explain for one ticker.'],
   ['GET /api/universe', 'Per-underlying rollup for the latest snapshot.'],
   ['GET /api/explain?symbol=NVDA&<filters>', 'Per-contract pass/fail for one ticker: pipeline-stage exclusion vs which user filters it fails.'],
   ['GET /api/export?format=csv|json&<filters>', 'Download the current screen (40 columns).'],

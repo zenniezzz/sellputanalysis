@@ -9,8 +9,9 @@ export const dynamic = 'force-dynamic';
 export default async function Page({
   searchParams,
 }: {
-  searchParams: Record<string, string | string[] | undefined>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  const sp = await searchParams;
   const store = await getStore();
   const snap = await store.latest();
 
@@ -26,7 +27,7 @@ export default async function Page({
     );
   }
 
-  const filters = filtersFromQuery(searchParamsToUrl(searchParams));
+  const filters = filtersFromQuery(searchParamsToUrl(sp));
   const ctx = await screenContext();
   const result = applyScreen(snap.rows, filters, ctx);
   const user = await currentUser();
@@ -43,7 +44,6 @@ export default async function Page({
         visible: result.visible,
         counts: result.counts,
         nearestMatches: result.nearestMatches,
-        excludedBy: Object.fromEntries(result.excludedBy),
       }}
     />
   );

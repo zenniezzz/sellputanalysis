@@ -169,7 +169,10 @@ export function applyScreen(rows: SnapshotRow[], f: ScreenFilters, ctx: ScreenCo
     visible,
     excludedBy,
     counts: { priced: priced.length, visible: visible.length, excluded: excludedBy.size },
-    nearestMatches: computeNearestMatches(priced, f, ctx),
+    // only the empty-result state surfaces these (see CandidatesView); skip the
+    // O(rows × filters) relaxation search otherwise — it dominated request CPU
+    // under load (M6.8 k6 finding, plan §10.8)
+    nearestMatches: visible.length === 0 ? computeNearestMatches(priced, f, ctx) : [],
   };
 }
 

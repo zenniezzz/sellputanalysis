@@ -10,8 +10,9 @@ export const dynamic = 'force-dynamic';
 
 const SERIES_COLORS = ['var(--accent)', 'var(--warn)', 'var(--bad)', '#7aa5e0', '#c58ae0', '#e0c07a'];
 
-export default async function ComparePage({ params }: { params: { id: string } }) {
-  const resolved = await resolveComparison(params.id);
+export default async function ComparePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const resolved = await resolveComparison(id);
   if (!resolved) notFound();
 
   const { frozen, meta, rows, missing } = resolved;

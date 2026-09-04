@@ -3,7 +3,7 @@
 A daily screener for put-selling candidates. Full spec:
 [`put-sell-screener-plan.md`](./put-sell-screener-plan.md) (v3.0).
 
-## Status — M0 → M6.5 (see plan §12)
+## Status — M0 → M6.8 (see plan §12)
 
 | Deliverable | State |
 |---|---|
@@ -15,12 +15,13 @@ A daily screener for put-selling candidates. Full spec:
 | `@pss/screen` — filter schema + URL codec (round-trip, clamp, band-repair) · `applyScreen` (live re-filter over persisted rows, per-basis ROC/capital) · `explainSymbol` ("why isn't X here") · nearest-match relaxations · CSV export | ✅ |
 | `@pss/screener-cli` — `cli:one-name`, `cli:run-snapshot` (+`--as-of`, `--preset`), `cli:greek-xcheck` | ✅ |
 | `@pss/api` — framework-free read server | ✅ walking skeleton |
-| **`@pss/web` — Next.js 14 app**: 5-tab UI (Candidates / Universe / Compare / Snapshots / Trades). Candidates: sortable expandable table, full §7 filters + URL state, nearest-match, "why isn't X here?", CSV/JSON, scatter (6 presets, chart⇄table, cross-highlight), row-expander P&L cone + log-paper-trade. Universe: per-name rollup → click to filter. Compare: tray → transposed table (best-in-row) + overlaid cones + freezable `/compare/<id>` + CSV/print-PDF. Snapshots: bookmarks, Freeze, A↔B diff. Trades: paper-trade log + live calibration. `/glossary` · `/method` · `/docs`. Auth.js accounts + saved screens + watchlists | ✅ `npm run web` |
+| **`@pss/web` — Next.js 15 app**: 5-tab UI (Candidates / Universe / Compare / Snapshots / Trades). Candidates: sortable expandable table, full §7 filters + URL state, nearest-match, "why isn't X here?", CSV/JSON, scatter (6 presets, chart⇄table, cross-highlight), row-expander P&L cone + log-paper-trade. Universe: per-name rollup → click to filter. Compare: tray → transposed table (best-in-row) + overlaid cones + freezable `/compare/<id>` + CSV/print-PDF. Snapshots: bookmarks, Freeze, A↔B diff. Trades: paper-trade log + live calibration. `/glossary` · `/method` · `/docs`. Auth.js accounts + saved screens + watchlists | ✅ `npm run web` |
 | M6 | **Universe tab** (per-name rollup: put/call volume, σ30, IV rank, skew, earnings, candidate counts; click → filter) · **`/glossary`** (18 entries) · **`/method`** (BSM limits, P(ITM) vs PoP, the VRP haircut) · **`/docs`** (read API) · status banners (degraded / stale / score-basis) · first-run bar · a11y (skip link, roles, `aria-sort`, focus rings, reduced-motion) · `/api/screen` `?limit`/`?cursor` pagination |
 | M6.5 | **paper-trade tracker** — "Log paper trade" from the row expander freezes the modeled credit / PoP / EV; **Trades tab** with open/closed lists + close flow + **live calibration report** (PoP by decile bucket with binomial CI, credit fill-bias, EV realized-vs-modeled); `cli:calibration`; Beta-feedback link |
-| CI | `ci.yml` (typecheck ×2 + 224 tests + `next build`) · `nightly.yml` (live greek cross-check) |
+| CI | `ci.yml` (typecheck ×2 + 230 tests + `npm audit --omit=dev --audit-level=high` gate + `next build`) · `nightly.yml` (live greek cross-check) · `dependabot.yml` (weekly npm + Actions) |
+| M6.8 | **Security**: [`SECURITY.md`](./SECURITY.md) — upgraded Next 14→**15.5**/React 19 and Vitest 1→4 to clear a critical + 5 high `npm audit` findings (0 vulnerabilities now); added write-endpoint input validation ([`app/lib/validate.ts`](apps/web/app/lib/validate.ts)); edge rate limiting (60 req/min/IP, [`middleware.ts`](apps/web/middleware.ts)). **Load test**: `k6/screen.js` — p95 went 41 s → **4.0 ms** at 100 rps after fixing a re-parsed-snapshot-per-request bottleneck, an O(rows×filters) relaxation search that ran unconditionally, and an unused-but-serialized `excludedBy` payload (details + numbers in SECURITY.md). **DR**: drilled backup→loss→restore→reproducibility-replay end to end; procedure + drill log in [`docs/runbook.md`](docs/runbook.md). |
 | ORATS 1-year IV backfill purchase · private-beta onboarding | ⏳ external (importer + tracker ready) |
-| M6.8 (dependency audit · security review · DR drill · k6 load test) | ⏭ next |
+| M7 (caching hardening · `DISPLAY_DELAYED` finalize · production cutover · on-call runbook) | ⏭ next |
 
 Verified on live CBOE data (10 names): `status=good`, 2,840 contracts priced,
 0 IV failures, greek cross-check **1.11%** median abs (SLO < 2%), 33 candidates
@@ -49,8 +50,12 @@ packages/
 apps/
   screener-cli/   one-name · full-snapshot (+replay) · greek-xcheck
   api/            read-only snapshot server (walking skeleton)
-  web/            Next.js 14 screener UI + Auth.js
+  web/            Next.js 15 screener UI + Auth.js
+k6/               load test — see docs/runbook.md
 ```
+
+Security posture: [`SECURITY.md`](./SECURITY.md). Backup/DR + load-test
+procedure: [`docs/runbook.md`](./docs/runbook.md).
 
 Monorepo via npm workspaces. Packages resolve as `@pss/*`; `tsx` and Vitest run
 the TypeScript sources directly (no build step yet).
@@ -59,7 +64,7 @@ the TypeScript sources directly (no build step yet).
 
 ```bash
 npm install
-npm test                              # 112 tests (+1 Postgres test, skipped without DATABASE_URL)
+npm test                              # 230 tests (+1 Postgres test, skipped without DATABASE_URL)
 npm run typecheck
 
 # one contract at a time
