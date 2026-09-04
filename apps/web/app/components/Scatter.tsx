@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react';
 import { scoreColorPosition } from '@pss/options';
 import type { ScreenedRow } from '@pss/screen';
-import { num, pct } from '../lib/format';
+import { num, pct, score10 } from '../lib/format';
 
 type AxisKey =
   | 'absDelta'
@@ -122,7 +122,7 @@ export function Scatter({
       </select>
       <span style={{ flex: 1 }} />
       <span style={{ fontSize: 11, color: 'var(--ink-faint)' }}>
-        size = OI · shade = score · {pts.data.length} pts
+        size = OI · shade = score (0–10) · {pts.data.length} pts
       </span>
       <button className="btn" onClick={() => setView(view === 'chart' ? 'table' : 'chart')}>
         {view === 'chart' ? 'table' : 'chart'}
@@ -142,7 +142,7 @@ export function Scatter({
                 <th>exp / K</th>
                 <th>{xAxis.label}</th>
                 <th>{yAxis.label}</th>
-                <th>score</th>
+                <th>score /10</th>
                 <th>OI</th>
               </tr>
             </thead>
@@ -162,7 +162,7 @@ export function Scatter({
                     </td>
                     <td>{xAxis.fmt(p.x)}</td>
                     <td>{yAxis.fmt(p.y)}</td>
-                    <td>{num(p.r.score, 2)}</td>
+                    <td>{score10(p.r.score)}</td>
                     <td>{p.r.openInterest.toLocaleString('en-US')}</td>
                   </tr>
                 ))}
@@ -267,7 +267,7 @@ export function Scatter({
           <div>
             {yAxis.label}: {yAxis.fmt(hover.y)}
           </div>
-          <div>score {num(hover.r.score, 2)} · OI {hover.r.openInterest.toLocaleString('en-US')}</div>
+          <div>score {score10(hover.r.score)}/10 · OI {hover.r.openInterest.toLocaleString('en-US')}</div>
         </div>
       )}
     </div>

@@ -7,7 +7,7 @@
  */
 
 import type { ScreenedRow } from '@pss/screen';
-import { int, num, pct, usd } from './format';
+import { int, num, pct, score10, usd } from './format';
 
 const DELTA_TARGET = 0.25;
 
@@ -16,7 +16,10 @@ export type Direction = boolean | null;
 
 export interface CompareMetricDef {
   key: string;
+  /** Row label for the CSV export, where `raw()` (the full-precision value) is what's written. */
   label: string;
+  /** On-screen row label, next to `format()`'s value — only set where it differs from `label` (currently just the composite score, shown as a 0–10 rating on screen but exported at full precision). */
+  displayLabel?: string;
   group: string;
   higherBetter: Direction;
   /** Raw numeric value (already sign-normalised for ranking), or null. */
@@ -59,7 +62,7 @@ const fin = (x: number | null | undefined): number | null =>
   x == null || !Number.isFinite(x) ? null : x;
 
 export const COMPARE_METRICS: CompareMetricDef[] = [
-  { key: 'score', label: 'Composite score', group: 'Score', higherBetter: true, raw: (r) => fin(r.score), format: (r) => num(r.score, 2) },
+  { key: 'score', label: 'Composite score', displayLabel: 'Composite score /10', group: 'Score', higherBetter: true, raw: (r) => fin(r.score), format: (r) => score10(r.score) },
   { key: 'evToMaxloss', label: 'EV / max-loss', group: 'Returns', higherBetter: true, raw: (r) => fin(r.evToMaxloss), format: (r) => num(r.evToMaxloss, 3) },
   { key: 'annRoc', label: 'Annualized ROC', group: 'Returns', higherBetter: true, raw: (r) => fin(r.displayAnnRoc), format: (r) => pct(r.displayAnnRoc) },
   { key: 'decayYield', label: 'Decay yield', group: 'Returns', higherBetter: true, raw: (r) => fin(r.decayYield), format: (r) => pct(r.decayYield, 2) },
@@ -118,7 +121,7 @@ export function compareTable(rows: ScreenedRow[]): CompareTable {
     const best = bestInRow(rows, def);
     return {
       key: def.key,
-      label: def.label,
+      label: def.displayLabel ?? def.label,
       group: def.group,
       higherBetter: def.higherBetter,
       cells: rows.map((r) => ({

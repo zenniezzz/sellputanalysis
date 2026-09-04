@@ -130,7 +130,7 @@ export const GLOSSARY: GlossaryEntry[] = [
     term: 'Composite score',
     group: 'Ranking',
     definition:
-      'Weighted sum of z-scores (EV/max-loss, annROC, IV-vs-fitted residual, IV rank; minus spread and distance of |Δ| from 0.25) with fixed penalties for the caution flags. Blended between a rolling 1-year reference distribution and the current snapshot’s cross-section — the “score basis” chip shows which.',
+      'Weighted sum of z-scores (EV/max-loss, annROC, IV-vs-fitted residual, IV rank; minus spread and distance of |Δ| from 0.25) with fixed penalties for the caution flags. Blended between a rolling 1-year reference distribution and the current snapshot’s cross-section — the “score basis” chip shows which. Displayed as a 0–10 rating (higher is better) — a rescaling of the underlying z-score for readability; sorting, CSV/JSON export, and comparisons still use the full-precision value underneath.',
   },
   {
     id: 'assignment',

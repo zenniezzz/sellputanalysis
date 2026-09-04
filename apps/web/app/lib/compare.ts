@@ -7,7 +7,7 @@
  */
 
 import type { ScreenedRow } from '@pss/screen';
-import { int, num, pct, usd } from './format';
+import { int, num, pct, score10, usd } from './format';
 
 export interface CompareMetric {
   metric: string;
@@ -29,7 +29,7 @@ export interface CompareMetric {
 export const DELTA_TARGET = 0.25;
 
 const ALL_METRICS: CompareMetric[] = [
-  { metric: 'score', label: 'score', values: (r) => num(r.score, 2), raw: (r) => r.score, higherBetter: true },
+  { metric: 'score', label: 'score /10', values: (r) => score10(r.score), raw: (r) => r.score, higherBetter: true },
   {
     metric: 'evToMaxloss',
     label: 'EV / max-loss',

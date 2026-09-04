@@ -3,7 +3,7 @@
 import { useMemo, type ReactNode } from 'react';
 import { pnlProfile } from '@pss/options';
 import type { ScreenedRow } from '@pss/screen';
-import { num, pct, usd, usd0 } from '../lib/format';
+import { num, pct, score10, usd, usd0 } from '../lib/format';
 import { LogTradeButton } from './LogTradeButton';
 
 const CW = 520;
@@ -77,7 +77,7 @@ export function RowDetail({
             </div>
           </Group>
           {row.scoreComponents && (
-            <Group title={`Score ${num(row.score, 2)}`}>
+            <Group title={`Score ${score10(row.score)} /10`}>
               {Object.entries(row.scoreComponents).map(([k, v]) => (
                 <KV key={k} k={k} v={num(v, 3)} accent={v > 0 ? 'pos' : v < 0 ? 'neg' : undefined} />
               ))}

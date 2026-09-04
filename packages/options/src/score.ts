@@ -270,3 +270,16 @@ export function scoreColorPosition(score: number | null): number | null {
   if (score == null) return null;
   return Math.max(0, Math.min(1, (score - -2) / (3 - -2)));
 }
+
+/**
+ * Display-only rescale of the raw composite z-score onto a 0–10 rating,
+ * over the same fixed [−2, +3] domain as `scoreColorPosition` (so a
+ * contract's number and its shading always agree). Purely presentational:
+ * a monotonic rescale of the same ranking, so sorting/filtering/exports keep
+ * using the raw `score` field untouched — only what's shown to the user
+ * changes. `null` (an unpriced row) stays `null`.
+ */
+export function scoreOutOf10(score: number | null): number | null {
+  const pos = scoreColorPosition(score);
+  return pos == null ? null : pos * 10;
+}

@@ -3,6 +3,7 @@ import {
   computeScores,
   SCORE_PRESETS,
   scoreColorPosition,
+  scoreOutOf10,
   type ReferenceStats,
   type ScoreInputRow,
 } from './score.js';
@@ -105,5 +106,24 @@ describe('scoreColorPosition', () => {
     expect(scoreColorPosition(0.5)).toBeCloseTo(0.5, 6);
     expect(scoreColorPosition(-5)).toBe(0);
     expect(scoreColorPosition(null)).toBeNull();
+  });
+});
+
+describe('scoreOutOf10', () => {
+  it('maps the same fixed [−2, +3] domain onto 0..10, agreeing with scoreColorPosition', () => {
+    expect(scoreOutOf10(-2)).toBe(0);
+    expect(scoreOutOf10(3)).toBe(10);
+    expect(scoreOutOf10(0.5)).toBeCloseTo(5, 6);
+    expect(scoreOutOf10(-5)).toBe(0); // clamped, same as scoreColorPosition
+    expect(scoreOutOf10(8)).toBe(10); // clamped
+    expect(scoreOutOf10(null)).toBeNull();
+  });
+
+  it('is a monotonic rescale — preserves ranking order', () => {
+    const scores = [-1.8, -0.4, 0, 0.9, 2.1, 2.9];
+    const rescaled = scores.map(scoreOutOf10);
+    for (let i = 1; i < rescaled.length; i++) {
+      expect(rescaled[i]!).toBeGreaterThan(rescaled[i - 1]!);
+    }
   });
 });

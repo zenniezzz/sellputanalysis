@@ -41,6 +41,7 @@ export {
 export {
   computeScores,
   scoreColorPosition,
+  scoreOutOf10,
   SCORE_PRESETS,
   SCORE_METRICS,
   type ScoreMetric,

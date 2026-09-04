@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { COLUMN_PRESETS, type ColumnPreset, type ScreenedRow, type SortDir, type SortKey } from '@pss/screen';
-import { num, pct, usd, usd0, int } from '../lib/format';
+import { num, pct, score10, usd, usd0, int } from '../lib/format';
 import { GLOSSARY_BY_ID } from '../lib/glossary';
 import { RowDetail } from './RowDetail';
 import { useCompareTray } from './CompareTray';
@@ -32,7 +32,7 @@ interface Col {
 }
 
 const COLS: Record<SortKey, Col> = {
-  score: { key: 'score', label: 'score', render: (r) => num(r.score, 2), cls: (r) => signCls(r.score) },
+  score: { key: 'score', label: 'score /10', render: (r) => score10(r.score), cls: (r) => signCls(r.score) },
   symbol: { key: 'symbol', label: 'sym', render: (r) => r.symbol, cls: () => 'sym' },
   dte: { key: 'dte', label: 'dte', render: (r) => String(r.dte) },
   entryCredit: { key: 'entryCredit', label: 'credit', render: (r) => usd(r.entryCredit) },

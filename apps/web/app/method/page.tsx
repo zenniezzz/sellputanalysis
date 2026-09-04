@@ -73,7 +73,11 @@ export default function MethodPage() {
         contract’s score does not move when you change an unrelated filter. While that reference is
         still accruing, z-scores fall back to the current snapshot’s robust (median/MAD)
         cross-section; the <strong>score basis</strong> chip in the header says which
-        (cross-sectional → blended → reference).
+        (cross-sectional → blended → reference). It's shown as a <strong>0–10 rating</strong>{' '}
+        (higher is better) — a fixed rescale of the underlying z-score for readability, over the
+        same domain the row shading uses; sorting, filtering, CSV/JSON export, and the Compare tab's
+        best-in-row picks all still use the full-precision value underneath, so nothing about the
+        ranking itself changes.
       </p>
 
       <h2 style={H}>Data</h2>
