@@ -17,7 +17,8 @@ create table if not exists snapshot (
   provider               text not null,
   display_delayed        boolean not null,
   filter_defaults        jsonb not null,
-  notes                  text
+  notes                  text,
+  universe               jsonb not null default '[]'
 );
 
 create index if not exists snapshot_created_at_idx on snapshot (created_at desc);

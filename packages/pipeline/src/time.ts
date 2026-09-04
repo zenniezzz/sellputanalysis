@@ -30,3 +30,9 @@ export function expirationInstantMs(expirationDate: string): number {
 export function calendarDte(now: Date, expirationDate: string): number {
   return Math.round((expirationInstantMs(expirationDate) - now.getTime()) / 86_400_000);
 }
+
+/** 3rd Friday of the month → a standard monthly expiration. */
+export function isMonthlyExpiration(expirationDate: string): boolean {
+  const d = new Date(`${expirationDate}T00:00:00Z`);
+  return d.getUTCDay() === 5 && d.getUTCDate() >= 15 && d.getUTCDate() <= 21;
+}

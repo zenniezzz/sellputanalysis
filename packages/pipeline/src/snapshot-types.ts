@@ -137,9 +137,34 @@ export interface IngestionLogEntry {
   durationMs: number;
 }
 
+/** One row per selected underlying — the Universe tab (plan §8.2). */
+export interface UniverseRow {
+  symbol: string;
+  sector: string | null;
+  spot: number;
+  settlement: 'physical' | 'cash';
+  inWindowPutVolume: number;
+  inWindowCallVolume: number;
+  putCallRatio: number | null;
+  sigma30: number | null;
+  ivRank: number | null;
+  ivPctile: number | null;
+  ivRankProxy: boolean;
+  putSkew25d: number | null;
+  hv20: number | null;
+  borrowRate: number | null;
+  hardToBorrow: boolean;
+  nextEarnings: string | null;
+  earningsConfirmed: boolean;
+  earningsBeforeNearestMonthly: boolean;
+  candidateCount: number;
+  pricedPutCount: number;
+}
+
 export interface Snapshot {
   meta: SnapshotMeta;
   rows: SnapshotRow[];
+  universe: UniverseRow[];
   run: IngestionRun;
   logs: IngestionLogEntry[];
 }

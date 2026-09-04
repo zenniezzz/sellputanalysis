@@ -18,9 +18,10 @@ import { FilterPanel } from './FilterPanel';
 import { SavedScreens } from './SavedScreens';
 import { Scatter } from './Scatter';
 import { SnapshotsPanel } from './SnapshotsPanel';
+import { UniversePanel } from './UniversePanel';
 import { WhyNotHere } from './WhyNotHere';
 
-type View = 'candidates' | 'compare' | 'snapshots';
+type View = 'candidates' | 'compare' | 'snapshots' | 'universe';
 
 export function CandidatesView({
   initial,
@@ -40,6 +41,7 @@ export function CandidatesView({
   const [expandedOcc, setExpandedOcc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [view, setView] = useState<View>('candidates');
+  const [onlySymbol, setOnlySymbol] = useState<string | null>(null);
   const [freezeMsg, setFreezeMsg] = useState<string | null>(null);
   const { selected } = useCompareTray();
   const abortRef = useRef<AbortController | null>(null);
@@ -119,6 +121,10 @@ export function CandidatesView({
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
   const { meta, run: ingestion, counts, nearestMatches } = data;
+  const shownRows = useMemo(
+    () => (onlySymbol ? data.visible.filter((r) => r.symbol === onlySymbol) : data.visible),
+    [data.visible, onlySymbol],
+  );
 
   return (
     <>
@@ -151,28 +157,45 @@ export function CandidatesView({
         </aside>
 
         <main>
-          <nav className="tabnav">
-            <button className={view === 'candidates' ? 'active' : ''} onClick={() => setView('candidates')}>
+          <nav className="tabnav" role="tablist">
+            <button role="tab" aria-selected={view === 'candidates'} className={view === 'candidates' ? 'active' : ''} onClick={() => setView('candidates')}>
               Candidates
             </button>
-            <button className={view === 'compare' ? 'active' : ''} onClick={() => setView('compare')}>
+            <button role="tab" aria-selected={view === 'universe'} className={view === 'universe' ? 'active' : ''} onClick={() => setView('universe')}>
+              Universe
+            </button>
+            <button role="tab" aria-selected={view === 'compare'} className={view === 'compare' ? 'active' : ''} onClick={() => setView('compare')}>
               Compare ({selected.length})
             </button>
-            <button className={view === 'snapshots' ? 'active' : ''} onClick={() => setView('snapshots')}>
+            <button role="tab" aria-selected={view === 'snapshots'} className={view === 'snapshots' ? 'active' : ''} onClick={() => setView('snapshots')}>
               Snapshots
             </button>
           </nav>
 
-          {view === 'snapshots' ? (
+          {view === 'universe' ? (
+            <UniversePanel
+              onPick={(sym) => {
+                setOnlySymbol(sym);
+                setView('candidates');
+              }}
+            />
+          ) : view === 'snapshots' ? (
             <SnapshotsPanel signedIn={!!user} />
           ) : (
             <>
               <div className="results-head">
-                <span className="count">{counts.visible.toLocaleString()} candidates</span>
+                <span className="count">
+                  {onlySymbol ? shownRows.length : counts.visible.toLocaleString()} candidates
+                </span>
                 <span className="sub">
                   of {counts.priced.toLocaleString()} priced · {counts.excluded.toLocaleString()} filtered out
                   {loading ? ' · …' : ''}
                 </span>
+                {onlySymbol && (
+                  <button className="btn" onClick={() => setOnlySymbol(null)}>
+                    {onlySymbol} only ✕
+                  </button>
+                )}
                 <span className="spacer" />
                 {freezeMsg && (
                   <span className="sub" style={{ color: 'var(--accent)' }}>
@@ -199,9 +222,9 @@ export function CandidatesView({
                 <CompareView rows={data.visible} selected={selected} />
               ) : (
                 <>
-                  {data.visible.length > 0 && (
+                  {shownRows.length > 0 && (
                     <Scatter
-                      rows={data.visible}
+                      rows={shownRows}
                       highlightedOcc={highlightedOcc}
                       onHover={setHighlightedOcc}
                       onSelect={(occ) => {
@@ -232,7 +255,7 @@ export function CandidatesView({
                   )}
 
                   <CandidatesTable
-                    rows={data.visible}
+                    rows={shownRows}
                     preset={filters.columns}
                     sort={filters.sort}
                     sortDir={filters.sortDir}

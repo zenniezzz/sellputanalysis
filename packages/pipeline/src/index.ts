@@ -23,6 +23,7 @@ export {
   type CandidateGate,
   type ModelCaution,
   type Snapshot,
+  type UniverseRow,
   type SnapshotMeta,
   type SnapshotRow,
   type IngestionRun,

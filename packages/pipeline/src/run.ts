@@ -29,10 +29,12 @@ import {
   type Snapshot,
   type SnapshotMeta,
   type SnapshotRow,
+  type UniverseRow,
 } from './snapshot-types.js';
 import { inStrikeWindow } from './strikes.js';
 import { buildNameSurface, type NameSurface } from './surface-build.js';
-import { calendarDte } from './time.js';
+import { calendarDte, isMonthlyExpiration } from './time.js';
+import type { EarningsInfo } from '@pss/market-data';
 import { applyUniverseFilters, type UniverseSource } from './universe.js';
 
 export interface RunSnapshotConfig {
@@ -159,6 +161,15 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapsho
   let contractsPriced = 0;
   let ivSolveFailures = 0;
 
+  interface NameRollup {
+    name: NameData;
+    surface: NameSurface;
+    earnings: EarningsInfo | null;
+    callVolume: number;
+    nearestMonthly: string | null;
+  }
+  const rollups: NameRollup[] = [];
+
   for (const name of selected) {
     const dStart = Date.now();
     const earnRes = await config.marketData.getEarnings(name.symbol);
@@ -186,8 +197,10 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapsho
     });
 
     // ---- Stages D–E: price & gate the candidate puts ----------------------
+    let callVolume = 0;
     for (const [exp, m] of expMeta) {
       const puts = m.quotes.filter((o) => o.right === 'P');
+      for (const o of m.quotes) if (o.right === 'C') callVolume += o.volume;
       const expSurface = surface.byExpiration.get(exp);
 
       const earningsBeforeExpiry =
@@ -225,6 +238,9 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapsho
       }
     }
     ivSamples.push(...maybeIvSample(name.symbol, now, surface, name.underlying));
+    const nearestMonthly =
+      [...expMeta.keys()].filter(isMonthlyExpiration).sort()[0] ?? null;
+    rollups.push({ name, surface, earnings, callVolume, nearestMonthly });
     log({ symbol: name.symbol, stage: 'D', outcome: 'ok', durationMs: Date.now() - dStart });
   }
 
@@ -262,6 +278,38 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapsho
       (b.evToMaxloss ?? -Infinity) - (a.evToMaxloss ?? -Infinity),
   );
   const candidatesFound = rows.filter((r) => r.isCandidate).length;
+
+  // ---- Universe rollup (plan §8.2) ---------------------------------------
+  const universeRows: UniverseRow[] = rollups.map((ru) => {
+    const nameRows = rows.filter((r) => r.symbol === ru.name.symbol);
+    const u = ru.name.underlying;
+    const nextEarnings = ru.earnings?.next?.slice(0, 10) ?? null;
+    return {
+      symbol: ru.name.symbol,
+      sector: u.sector,
+      spot: u.spot,
+      settlement: u.settlement,
+      inWindowPutVolume: ru.name.inWindowPutVolume,
+      inWindowCallVolume: ru.callVolume,
+      putCallRatio: ru.callVolume > 0 ? ru.name.inWindowPutVolume / ru.callVolume : null,
+      sigma30: Number.isFinite(ru.surface.sigma30) ? ru.surface.sigma30 : null,
+      ivRank: ru.surface.ivRank,
+      ivPctile: ru.surface.ivPctile,
+      ivRankProxy: ru.surface.ivRankIsProxy,
+      putSkew25d:
+        [...ru.surface.byExpiration.values()].map((e) => e.putSkew25d).find((s) => s != null) ?? null,
+      hv20: u.hv20,
+      borrowRate: u.borrowRate,
+      hardToBorrow: u.hardToBorrow,
+      nextEarnings,
+      earningsConfirmed: ru.earnings?.confirmed ?? false,
+      earningsBeforeNearestMonthly:
+        nextEarnings != null && ru.nearestMonthly != null && nextEarnings <= ru.nearestMonthly,
+      candidateCount: nameRows.filter((r) => r.isCandidate).length,
+      pricedPutCount: nameRows.filter((r) => r.iv != null).length,
+    };
+  });
+  universeRows.sort((a, b) => b.inWindowPutVolume - a.inWindowPutVolume);
 
   // ---- Stage H: assemble --------------------------------------------------
   const namesOk = selected.length;
@@ -303,7 +351,7 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapsho
     status,
   };
 
-  return { meta, rows, run, logs, ivSamples, metricSamples };
+  return { meta, rows, universe: universeRows, run, logs, ivSamples, metricSamples };
 }
 
 /** One 30-day ATM IV sample per name per day for the history store. */
@@ -350,6 +398,7 @@ function failedSnapshot(
   const finishedAt = new Date().toISOString();
   return {
     ivSamples: [],
+    universe: [],
     metricSamples: {},
     meta: {
       id,

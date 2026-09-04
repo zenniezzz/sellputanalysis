@@ -43,12 +43,13 @@ export class PgSnapshotStore implements SnapshotStore {
     await this.db.query(
       `insert into snapshot (id, run_id, created_at, snapshot_day, run_type, status,
          data_completeness, score_basis, metric_schema_version, rates_as_of,
-         universe_hash, provider, display_delayed, filter_defaults, notes)
-       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)`,
+         universe_hash, provider, display_delayed, filter_defaults, notes, universe)
+       values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
       [
         m.id, m.runId, m.createdAt, m.snapshotDay, m.runType, m.status,
         m.dataCompleteness, m.scoreBasis, m.metricSchemaVersion, m.ratesAsOf,
         m.universeHash, m.provider, m.displayDelayed, JSON.stringify(m.filterDefaults), m.notes ?? null,
+        JSON.stringify(s.universe ?? []),
       ],
     );
 
@@ -150,9 +151,11 @@ export class PgSnapshotStore implements SnapshotStore {
       'select * from ingestion_log where run_id = $1 order by seq',
       [meta.runId],
     );
+    const snapRes = await this.db.query('select universe from snapshot where id = $1', [meta.id]);
     return {
       meta,
       rows: rowsRes.rows.map(dbRowToSnapshotRow),
+      universe: (asJson(snapRes.rows[0]?.['universe']) as Snapshot['universe']) ?? [],
       run: dbRowToRun(runRes.rows[0] ?? {}, meta),
       logs: logRes.rows.map((l) => dbRowToLog(l, meta.runId)),
     };

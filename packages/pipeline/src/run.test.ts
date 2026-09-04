@@ -158,6 +158,23 @@ describe('runSnapshot', () => {
     expect(snap.rows.filter((r) => r.isCandidate).every((r) => r.score != null)).toBe(true);
   });
 
+  it('builds a universe rollup: one row per priced name, ranked by put volume', async () => {
+    const snap = await runSnapshot(config());
+    expect(snap.universe.map((u) => u.symbol).sort()).toEqual(['AAA', 'BBB', 'CCC', 'DDD']);
+    for (const u of snap.universe) {
+      expect(u.spot).toBeGreaterThan(0);
+      expect(u.pricedPutCount).toBeGreaterThan(0);
+      expect(u.candidateCount).toBeLessThanOrEqual(u.pricedPutCount);
+      expect(u.sigma30).toBeGreaterThan(0);
+      expect(u.putCallRatio).toBeGreaterThan(0);
+    }
+    // sorted by in-window put volume desc
+    const vols = snap.universe.map((u) => u.inWindowPutVolume);
+    expect(vols).toEqual([...vols].sort((a, b) => b - a));
+    // DDD is the cash-settled index name
+    expect(snap.universe.find((u) => u.symbol === 'DDD')?.settlement).toBe('cash');
+  });
+
   it('emits one σ30 history sample per priced name', async () => {
     const snap = await runSnapshot(config());
     const symbols = new Set(snap.ivSamples.map((s) => s.symbol));

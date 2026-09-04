@@ -202,6 +202,7 @@ function mkSnapshot(runId: string, rows: SnapshotRow[], metricSchemaVersion = 1)
       },
     },
     rows,
+    universe: [],
     run: {
       runId,
       startedAt: NOW.toISOString(),
