@@ -17,7 +17,6 @@ import { CompareView } from './CompareView';
 import { FilterPanel } from './FilterPanel';
 import { SavedScreens } from './SavedScreens';
 import { FirstRunBar } from './FirstRunBar';
-import { Scatter } from './Scatter';
 import { SnapshotsPanel } from './SnapshotsPanel';
 import { StatusBanner } from './StatusBanner';
 import { TradesPanel } from './TradesPanel';
@@ -253,23 +252,6 @@ export function CandidatesView({
                 <CompareView rows={data.visible} selected={selected} />
               ) : (
                 <>
-                  {shownRows.length > 0 && (
-                    <Scatter
-                      rows={shownRows}
-                      highlightedOcc={highlightedOcc}
-                      onHover={setHighlightedOcc}
-                      onSelect={(occ) => {
-                        setExpandedOcc(occ);
-                        setHighlightedOcc(occ);
-                        requestAnimationFrame(() =>
-                          document
-                            .getElementById(`row-${occ.trim()}`)
-                            ?.scrollIntoView({ block: 'center', behavior: 'smooth' }),
-                        );
-                      }}
-                    />
-                  )}
-
                   {counts.visible === 0 && nearestMatches.length > 0 && (
                     <div className="nearest">
                       No matches. Nearest:{' '}
