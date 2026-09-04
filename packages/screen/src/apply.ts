@@ -71,6 +71,7 @@ function predicates(f: ScreenFilters, ctx: ScreenContext): Predicate[] {
       pass: (r) => !f.watchlistOnly || watchlist.has(r.symbol.toUpperCase()),
     },
     { key: 'minUnderlyingPrice', label: `underlying ≥ $${f.minUnderlyingPrice}`, pass: (r) => r.spot >= f.minUnderlyingPrice },
+    { key: 'maxUnderlyingPrice', label: `underlying ≤ $${f.maxUnderlyingPrice}`, pass: (r) => r.spot <= f.maxUnderlyingPrice },
     { key: 'dteMin', label: `DTE ≥ ${f.dteMin}`, pass: (r) => r.dte >= f.dteMin },
     { key: 'dteMax', label: `DTE ≤ ${f.dteMax}`, pass: (r) => r.dte <= f.dteMax },
     { key: 'deltaLo', label: `|Δ| ≥ ${f.deltaLo}`, pass: (r) => r.delta != null && Math.abs(r.delta) >= f.deltaLo - 1e-9 },

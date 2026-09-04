@@ -54,6 +54,7 @@ export function filtersFromQuery(params: URLSearchParams): ScreenFilters {
     earningsBeforeExpiry: asEnum<EarningsMode>(params.get('earningsBeforeExpiry'), ['exclude', 'flag', 'ignore'], DEFAULT_FILTERS.earningsBeforeExpiry),
     expirationType: asEnum<ExpirationType>(params.get('expirationType'), ['any', 'monthly', 'weekly'], DEFAULT_FILTERS.expirationType),
     minUnderlyingPrice: n('minUnderlyingPrice'),
+    maxUnderlyingPrice: n('maxUnderlyingPrice'),
     maxBuyingPowerPerPosition:
       params.get('maxBuyingPowerPerPosition') == null || params.get('maxBuyingPowerPerPosition') === ''
         ? null
@@ -74,6 +75,7 @@ export function filtersFromQuery(params: URLSearchParams): ScreenFilters {
   // keep the bands coherent
   if (f.dteMin > f.dteMax) [f.dteMin, f.dteMax] = [f.dteMax, f.dteMin];
   if (f.deltaLo > f.deltaHi) [f.deltaLo, f.deltaHi] = [f.deltaHi, f.deltaLo];
+  if (f.minUnderlyingPrice > f.maxUnderlyingPrice) [f.minUnderlyingPrice, f.maxUnderlyingPrice] = [f.maxUnderlyingPrice, f.minUnderlyingPrice];
   return f;
 }
 

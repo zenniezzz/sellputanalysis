@@ -45,6 +45,12 @@ describe('filter codec', () => {
     expect(f.dteMax).toBe(50);
   });
 
+  it('repairs an inverted underlying-price band', () => {
+    const f = filtersFromQuery(new URLSearchParams('minUnderlyingPrice=200&maxUnderlyingPrice=50'));
+    expect(f.minUnderlyingPrice).toBe(50);
+    expect(f.maxUnderlyingPrice).toBe(200);
+  });
+
   it('clamp then band-repair: a huge deltaLo lands at deltaHi and pushes deltaHi to its max', () => {
     const f = filtersFromQuery(new URLSearchParams('deltaLo=9'));
     expect(f.deltaLo).toBe(0.35); // swapped with the default deltaHi

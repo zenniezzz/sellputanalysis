@@ -34,6 +34,7 @@ export interface ScreenFilters {
   earningsBeforeExpiry: EarningsMode;
   expirationType: ExpirationType;
   minUnderlyingPrice: number;
+  maxUnderlyingPrice: number;
   maxBuyingPowerPerPosition: number | null;
   capitalBasis: CapitalBasis;
   sectors: string[];
@@ -68,6 +69,7 @@ export const DEFAULT_FILTERS: ScreenFilters = {
   earningsBeforeExpiry: 'exclude',
   expirationType: 'any',
   minUnderlyingPrice: 10,
+  maxUnderlyingPrice: 5000,
   maxBuyingPowerPerPosition: null,
   capitalBasis: 'csp',
   sectors: [],
@@ -109,6 +111,7 @@ export const NUMERIC_FILTER_META: NumericFilterMeta[] = [
   { key: 'maxOrderSizeVsOiPct', label: 'Max order size vs OI (%)', min: 1, max: 50, step: 1, unit: 'int', group: 'liquidity' },
   { key: 'minIvRankOrPctile', label: 'Min IV rank / pctile', min: 0, max: 100, step: 1, unit: 'int', group: 'vol' },
   { key: 'minUnderlyingPrice', label: 'Min underlying price', min: 1, max: 1000, step: 1, unit: 'usd', group: 'universe' },
+  { key: 'maxUnderlyingPrice', label: 'Max underlying price', min: 1, max: 5000, step: 1, unit: 'usd', group: 'universe' },
 ];
 
 export type SortKey =

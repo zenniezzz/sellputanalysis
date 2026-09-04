@@ -83,6 +83,15 @@ describe('applyScreen', () => {
     expect(res.visible.some((r) => r.symbol === 'BBB')).toBe(false);
   });
 
+  it('maxUnderlyingPrice drops names priced above the cap', () => {
+    const base = { ...DEFAULT_FILTERS, minAnnRoc: 0, minIvRankOrPctile: 0 };
+    const capped = applyScreen(rows, { ...base, maxUnderlyingPrice: 150 });
+    // AAA (100) and CCC (40) pass; BBB (250) and DDD (600) don't
+    expect(capped.visible.every((r) => r.spot <= 150)).toBe(true);
+    expect(capped.visible.some((r) => r.symbol === 'BBB' || r.symbol === 'DDD')).toBe(false);
+    expect(capped.visible.some((r) => r.symbol === 'AAA')).toBe(true);
+  });
+
   it('watchlistOnly restricts to the session watchlist', () => {
     const base = { ...DEFAULT_FILTERS, minAnnRoc: 0, minIvRankOrPctile: 0 };
     const all = applyScreen(rows, base);
