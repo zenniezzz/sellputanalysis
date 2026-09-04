@@ -22,12 +22,12 @@
     "cli:calibration": "tsx apps/screener-cli/src/calibration.ts"
   },
   "devDependencies": {
-    "@types/node": "^20.14.12",
+    "@types/node": "^26.4.1",
     "@types/pg": "^8.11.6",
     "black-scholes": "^1.1.0",
     "pg": "^8.12.0",
     "tsx": "^4.16.5",
-    "typescript": "^5.5.4",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.11"
   },
   "overrides": {
