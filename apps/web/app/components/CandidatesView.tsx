@@ -18,6 +18,7 @@ import { FilterPanel } from './FilterPanel';
 import { SavedScreens } from './SavedScreens';
 import { FirstRunBar } from './FirstRunBar';
 import { SnapshotsPanel } from './SnapshotsPanel';
+import { TopPutVolume } from './TopPutVolume';
 import { StatusBanner } from './StatusBanner';
 import { TradesPanel } from './TradesPanel';
 import { UniversePanel } from './UniversePanel';
@@ -252,6 +253,10 @@ export function CandidatesView({
                 <CompareView rows={data.visible} selected={selected} />
               ) : (
                 <>
+                  <TopPutVolume
+                    onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))}
+                  />
+
                   {counts.visible === 0 && nearestMatches.length > 0 && (
                     <div className="nearest">
                       No matches. Nearest:{' '}

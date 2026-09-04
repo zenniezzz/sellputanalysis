@@ -1,9 +1,18 @@
 // Defense-in-depth headers (plan §10.8). CSP allows inline styles/scripts — the
 // App Router injects a hydration bootstrap and the UI uses style={} heavily; a
 // nonce-based strict CSP is a follow-up.
+//
+// 'unsafe-eval' is added to script-src ONLY outside production: `next dev`'s
+// webpack bundle wraps every module in eval() (its default dev devtool, for
+// fast source maps), so a strict script-src silently kills hydration in dev
+// — the page looks fine (it's still valid SSR HTML) but nothing is
+// interactive and no client effect ever fires, with only a console EvalError
+// as a clue. `next build`/`next start` don't eval like this, so production
+// keeps the strict policy unchanged.
+const DEV_SCRIPT_SRC = process.env.NODE_ENV === 'production' ? "'self' 'unsafe-inline'" : "'self' 'unsafe-inline' 'unsafe-eval'";
 const CSP = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src ${DEV_SCRIPT_SRC}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data:",
   "font-src 'self'",
