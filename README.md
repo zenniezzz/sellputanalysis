@@ -3,7 +3,7 @@
 A daily screener for put-selling candidates. Full spec:
 [`put-sell-screener-plan.md`](./put-sell-screener-plan.md) (v3.0).
 
-## Status — M0 → M5 (see plan §12)
+## Status — M0 → M6 (see plan §12)
 
 | Deliverable | State |
 |---|---|
@@ -16,9 +16,10 @@ A daily screener for put-selling candidates. Full spec:
 | `@pss/screener-cli` — `cli:one-name`, `cli:run-snapshot` (+`--as-of`, `--preset`), `cli:greek-xcheck` | ✅ |
 | `@pss/api` — framework-free read server | ✅ walking skeleton |
 | **`@pss/web` — Next.js 14 app**: 3-tab UI (Candidates / Compare / Snapshots). Candidates: sortable expandable table, full §7 filters + URL state, nearest-match, "why isn't X here?", CSV/JSON, scatter (6 presets, chart⇄table, cross-highlight), row-expander P&L cone. **Compare: tray (max 6) → transposed contract×metric table (best-in-row) + overlaid P&L cones + freezable `/compare/<id>` shareable link + CSV/print-PDF. Snapshots: bookmarks, Freeze, A↔B diff view.** Auth.js accounts + saved screens + watchlists | ✅ `npm run web` |
-| CI | `ci.yml` (typecheck ×2 + 208 tests + `next build`) · `nightly.yml` (live greek cross-check) |
+| M6 | **Universe tab** (per-name rollup: put/call volume, σ30, IV rank, skew, earnings, candidate counts; click → filter) · **`/glossary`** (18 entries) · **`/method`** (BSM limits, P(ITM) vs PoP, the VRP haircut) · **`/docs`** (read API) · status banners (degraded / stale / score-basis) · first-run bar · a11y (skip link, roles, `aria-sort`, focus rings, reduced-motion) · `/api/screen` `?limit`/`?cursor` pagination |
+| CI | `ci.yml` (typecheck ×2 + 209 tests + `next build`) · `nightly.yml` (live greek cross-check) |
 | ORATS 1-year IV backfill purchase | ⏳ M2 (data purchase — importer ready) |
-| M6 (Universe tab, glossary, Model page, a11y, read API docs) | ⏭ next |
+| M6.5 (private beta · realized-performance / paper-trade tracker · EV calibration) | ⏭ next |
 
 Verified on live CBOE data (10 names): `status=good`, 2,840 contracts priced,
 0 IV failures, greek cross-check **1.11%** median abs (SLO < 2%), 33 candidates
