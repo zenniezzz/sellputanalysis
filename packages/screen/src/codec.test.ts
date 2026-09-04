@@ -53,7 +53,7 @@ describe('filter codec', () => {
 
   it('clamp then band-repair: a huge deltaLo lands at deltaHi and pushes deltaHi to its max', () => {
     const f = filtersFromQuery(new URLSearchParams('deltaLo=9'));
-    expect(f.deltaLo).toBe(0.35); // swapped with the default deltaHi
+    expect(f.deltaLo).toBe(DEFAULT_FILTERS.deltaHi); // swapped with the default deltaHi
     expect(f.deltaHi).toBe(0.5);
   });
 

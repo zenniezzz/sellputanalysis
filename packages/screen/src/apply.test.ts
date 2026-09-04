@@ -43,7 +43,7 @@ describe('applyScreen', () => {
     expect(res.visible.length).toBeGreaterThan(0);
     for (const r of res.visible) {
       expect(Math.abs(r.delta!)).toBeGreaterThanOrEqual(0.15 - 1e-9);
-      expect(Math.abs(r.delta!)).toBeLessThanOrEqual(0.35 + 1e-9);
+      expect(Math.abs(r.delta!)).toBeLessThanOrEqual(DEFAULT_FILTERS.deltaHi + 1e-9);
       expect(r.dte).toBeGreaterThanOrEqual(25);
       expect(r.spreadPct).toBeLessThanOrEqual(0.08);
     }
@@ -93,7 +93,10 @@ describe('applyScreen', () => {
   });
 
   it('watchlistOnly restricts to the session watchlist', () => {
-    const base = { ...DEFAULT_FILTERS, minAnnRoc: 0, minIvRankOrPctile: 0 };
+    // widen past the default $5-$200 band so BBB (250) and DDD (600) are in
+    // play too -- otherwise the default price cap alone would already leave
+    // only AAA/CCC, and this test wouldn't be isolating watchlistOnly at all
+    const base = { ...DEFAULT_FILTERS, minAnnRoc: 0, minIvRankOrPctile: 0, maxUnderlyingPrice: 1000 };
     const all = applyScreen(rows, base);
     const watched = applyScreen(rows, { ...base, watchlistOnly: true }, { watchlist: ['AAA', 'CCC'] });
     expect(watched.visible.length).toBeLessThan(all.visible.length);
