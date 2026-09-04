@@ -19,6 +19,7 @@ import { SavedScreens } from './SavedScreens';
 import { FirstRunBar } from './FirstRunBar';
 import { SnapshotsPanel } from './SnapshotsPanel';
 import { TopPutVolume } from './TopPutVolume';
+import { TopPutVolumeMonthly } from './TopPutVolumeMonthly';
 import { StatusBanner } from './StatusBanner';
 import { TradesPanel } from './TradesPanel';
 import { UniversePanel } from './UniversePanel';
@@ -254,6 +255,9 @@ export function CandidatesView({
               ) : (
                 <>
                   <TopPutVolume
+                    onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))}
+                  />
+                  <TopPutVolumeMonthly
                     onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))}
                   />
 
