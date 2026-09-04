@@ -139,6 +139,12 @@ export function CandidatesView({
           <span className="badge">Δ x-check {ingestion.greekXcheckMedianAbsPct.toFixed(2)}%</span>
         )}
         <span style={{ flex: 1 }} />
+        <a className="badge" href="/glossary">
+          Glossary
+        </a>
+        <a className="badge" href="/method">
+          Model &amp; method
+        </a>
         <AccountBar email={user?.email ?? null} />
       </div>
 

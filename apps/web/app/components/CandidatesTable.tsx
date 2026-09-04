@@ -3,8 +3,26 @@
 import type { ReactNode } from 'react';
 import { COLUMN_PRESETS, type ColumnPreset, type ScreenedRow, type SortDir, type SortKey } from '@pss/screen';
 import { num, pct, usd, usd0, int } from '../lib/format';
+import { GLOSSARY_BY_ID } from '../lib/glossary';
 import { RowDetail } from './RowDetail';
 import { useCompareTray } from './CompareTray';
+
+/** column key → glossary entry id (for header tooltips + jump links). */
+const GLOSSARY_FOR: Partial<Record<SortKey, string>> = {
+  score: 'score',
+  entryCredit: 'entry-credit',
+  iv: 'iv',
+  ivRank: 'ivrank',
+  putSkew25d: 'skew',
+  ivVsFitted: 'resid',
+  delta: 'delta',
+  decayYield: 'daily-decay',
+  probItm: 'probitm',
+  pop: 'pop',
+  evToMaxloss: 'ev',
+  annRoc: 'annroc',
+  dte: 'dte',
+};
 
 interface Col {
   key: SortKey;
@@ -92,17 +110,35 @@ export function CandidatesTable({
         <thead>
           <tr>
             <th className="ck" title="add to Compare" aria-label="compare" />
-            {cols.map((c) => (
-              <th
-                key={c.key}
-                className={`${c.key === 'symbol' ? 'sym ' : ''}${sort === c.key ? 'sorted' : ''}`}
-                onClick={() => onSort(c.key)}
-                title="click to sort"
-              >
-                {c.label}
-                {sort === c.key ? (sortDir === 'desc' ? ' ▾' : ' ▴') : ''}
-              </th>
-            ))}
+            {cols.map((c) => {
+              const g = GLOSSARY_FOR[c.key] ? GLOSSARY_BY_ID[GLOSSARY_FOR[c.key]!] : undefined;
+              return (
+                <th
+                  key={c.key}
+                  className={`${c.key === 'symbol' ? 'sym ' : ''}${sort === c.key ? 'sorted' : ''}`}
+                  onClick={() => onSort(c.key)}
+                  tabIndex={0}
+                  onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onSort(c.key))}
+                  title={g ? `${g.term} — ${g.definition}` : 'click to sort'}
+                  aria-sort={sort === c.key ? (sortDir === 'desc' ? 'descending' : 'ascending') : 'none'}
+                >
+                  {c.label}
+                  {sort === c.key ? (sortDir === 'desc' ? ' ▾' : ' ▴') : ''}
+                  {g && (
+                    <a
+                      href={`/glossary#${g.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ marginLeft: 3, color: 'var(--ink-faint)', textDecoration: 'none' }}
+                      aria-label={`${g.term} glossary entry`}
+                    >
+                      ⓘ
+                    </a>
+                  )}
+                </th>
+              );
+            })}
             <th>exp / K</th>
           </tr>
         </thead>
