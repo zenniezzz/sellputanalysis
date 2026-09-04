@@ -59,6 +59,7 @@ export const DEFAULT_UNIVERSE: UniverseCandidate[] = [
   S('TQQQ', 'ETF-Leveraged', { isLeveraged: true }),
   S('SQQQ', 'ETF-Inverse', { isInverse: true }),
   S('SOXL', 'ETF-Leveraged', { isLeveraged: true }),
+  S('TSLL', 'ETF-Leveraged', { isLeveraged: true }),
 ];
 
 export class StaticUniverseSource implements UniverseSource {
