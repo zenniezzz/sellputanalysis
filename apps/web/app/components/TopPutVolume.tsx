@@ -13,8 +13,23 @@ const N = 25;
  * `/api/universe` the Universe tab uses, so it reflects whichever snapshot
  * is latest: a new scheduled run naturally rotates this list, no separate
  * "daily" mechanism needed here.
+ *
+ * `minSpot`/`maxSpot` scope the leaderboard to a spot-price band (independent
+ * of whatever the sidebar's own price filter happens to be set to — this
+ * ranks the *universe*, not the current screen) — used for a second,
+ * $5–$200-restricted instance of this same table.
  */
-export function TopPutVolume({ onPick }: { onPick: (symbol: string) => void }) {
+export function TopPutVolume({
+  onPick,
+  minSpot,
+  maxSpot,
+  title,
+}: {
+  onPick: (symbol: string) => void;
+  minSpot?: number;
+  maxSpot?: number;
+  title?: string;
+}) {
   const [rows, setRows] = useState<UniverseRow[] | null>(null);
 
   useEffect(() => {
@@ -32,9 +47,13 @@ export function TopPutVolume({ onPick }: { onPick: (symbol: string) => void }) {
     };
   }, []);
 
-  if (rows == null || rows.length === 0) return null;
+  if (rows == null) return null;
 
-  const top = [...rows].sort((a, b) => b.inWindowPutVolume - a.inWindowPutVolume).slice(0, N);
+  const inBand = rows.filter((u) => (minSpot == null || u.spot >= minSpot) && (maxSpot == null || u.spot <= maxSpot));
+  if (inBand.length === 0) return null;
+
+  const top = [...inBand].sort((a, b) => b.inWindowPutVolume - a.inWindowPutVolume).slice(0, N);
+  const label = title ?? `Top ${N} by put volume — today's snapshot`;
 
   return (
     <div className="panel" style={{ padding: 12, marginBottom: 14 }}>
@@ -47,7 +66,7 @@ export function TopPutVolume({ onPick }: { onPick: (symbol: string) => void }) {
           marginBottom: 8,
         }}
       >
-        Top {N} by put volume — today's snapshot
+        {label}
       </div>
       <div className="tablewrap">
         <table className="grid">

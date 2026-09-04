@@ -257,6 +257,12 @@ export function CandidatesView({
                   <TopPutVolume
                     onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))}
                   />
+                  <TopPutVolume
+                    onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))}
+                    minSpot={5}
+                    maxSpot={200}
+                    title="Top 25 by put volume — today, $5–$200 spot"
+                  />
                   <TopPutVolumeMonthly
                     onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))}
                   />
