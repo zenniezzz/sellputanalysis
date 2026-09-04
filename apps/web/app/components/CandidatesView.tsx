@@ -16,8 +16,10 @@ import { CompareTray, useCompareTray } from './CompareTray';
 import { CompareView } from './CompareView';
 import { FilterPanel } from './FilterPanel';
 import { SavedScreens } from './SavedScreens';
+import { FirstRunBar } from './FirstRunBar';
 import { Scatter } from './Scatter';
 import { SnapshotsPanel } from './SnapshotsPanel';
+import { StatusBanner } from './StatusBanner';
 import { UniversePanel } from './UniversePanel';
 import { WhyNotHere } from './WhyNotHere';
 
@@ -128,11 +130,17 @@ export function CandidatesView({
 
   return (
     <>
+      <a href="#results" className="skip-link">
+        Skip to results
+      </a>
       <div className="toolbar">
         <h1>Put-Sell Screener</h1>
         <span className={`badge ${meta.status}`}>{meta.status}</span>
+        <span className="badge" title="composite-score reference basis">
+          score: {meta.scoreBasis.replace('_', '-')}
+        </span>
         <span className="meta">
-          {meta.runId} · {(meta.dataCompleteness * 100).toFixed(0)}% complete · score {meta.scoreBasis} ·{' '}
+          {meta.runId} · {(meta.dataCompleteness * 100).toFixed(0)}% complete ·{' '}
           {meta.displayDelayed ? 'delayed data' : 'realtime'}
         </span>
         {ingestion.greekXcheckMedianAbsPct != null && (
@@ -145,9 +153,14 @@ export function CandidatesView({
         <a className="badge" href="/method">
           Model &amp; method
         </a>
+        <a className="badge" href="/docs">
+          API
+        </a>
         <AccountBar email={user?.email ?? null} />
       </div>
 
+      <FirstRunBar />
+      <StatusBanner meta={meta} />
       <CompareTray rows={data.visible} />
 
       <div className="layout">
@@ -162,7 +175,7 @@ export function CandidatesView({
           />
         </aside>
 
-        <main>
+        <main id="results">
           <nav className="tabnav" role="tablist">
             <button role="tab" aria-selected={view === 'candidates'} className={view === 'candidates' ? 'active' : ''} onClick={() => setView('candidates')}>
               Candidates

@@ -146,3 +146,34 @@ table.grid td.ck, table.grid th.ck { text-align: center; width: 26px; padding-le
 
 .empty { padding: 40px; text-align: center; color: var(--ink-dim); }
 .disclaimer { margin-top: 24px; color: var(--ink-faint); font-size: 11px; max-width: 70ch; }
+
+/* --- M6: application states, a11y, responsive --- */
+.statusbar {
+  border: 1px solid var(--border); border-left-width: 3px; border-radius: 6px;
+  padding: 8px 12px; margin-bottom: 10px; font-size: 12px; color: var(--ink-dim);
+}
+.statusbar.warn { border-left-color: var(--warn); }
+.statusbar.bad { border-left-color: var(--bad); }
+.statusbar.info { border-left-color: var(--accent-dim); }
+.statusbar .x { background: none; border: none; color: var(--ink-faint); cursor: pointer; float: right; font-size: 14px; line-height: 1; }
+
+.skip-link {
+  position: absolute; left: -999px; top: 0; background: var(--accent); color: var(--bg);
+  padding: 6px 10px; border-radius: 0 0 6px 0; z-index: 100;
+}
+.skip-link:focus { left: 0; }
+
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tabnav button, .btn, table.grid th { min-height: 26px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+
+@media (max-width: 620px) {
+  .app { padding: 10px 10px 50px; }
+  .toolbar { gap: 8px; }
+  .toolbar .meta { flex-basis: 100%; }
+  table.grid { font-size: 11px; }
+  table.grid th, table.grid td { padding: 3px 6px; }
+}

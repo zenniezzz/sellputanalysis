@@ -8,6 +8,7 @@ export interface ScreenResponse {
   watchlist: string[];
   visible: ScreenedRow[];
   counts: { priced: number; visible: number; excluded: number };
+  nextCursor?: string | null;
   nearestMatches: NearestMatch[];
   excludedBy: Record<string, string[]>;
 }
