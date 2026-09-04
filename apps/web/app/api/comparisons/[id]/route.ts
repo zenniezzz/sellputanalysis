@@ -9,10 +9,14 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const resolved = await resolveComparison(id);
   if (!resolved) return NextResponse.json({ error: 'not found' }, { status: 404 });
 
-  return NextResponse.json({
-    comparison: resolved.frozen,
-    snapshot: { meta: resolved.meta, run: resolved.run },
-    rows: resolved.rows,
-    missing: resolved.missing,
-  });
+  return NextResponse.json(
+    {
+      comparison: resolved.frozen,
+      snapshot: { meta: resolved.meta, run: resolved.run },
+      rows: resolved.rows,
+      missing: resolved.missing,
+    },
+    // a frozen comparison never changes once created — safe to cache hard
+    { headers: { 'cache-control': 'public, max-age=3600, immutable' } },
+  );
 }

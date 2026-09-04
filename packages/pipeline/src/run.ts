@@ -61,6 +61,24 @@ export interface RunSnapshotConfig {
 
 const METRIC_SCHEMA_VERSION = 1;
 
+/**
+ * Providers confirmed (in writing, per plan §3.9) as licensed for real-time
+ * redistribution. Empty today — CBOE-delayed is the only adapter this repo
+ * ships, and it's inherently 15-min-delayed. `displayDelayed` is licensing
+ * labeling, not a UX toggle: it defaults to `true` for anything not on this
+ * list, and `config.displayDelayed` can only turn it *off* for a provider
+ * that's actually on it — a caller cannot mislabel delayed data as realtime
+ * by passing a config flag, whether by mistake or because a new provider was
+ * wired up before its licensing was confirmed here.
+ */
+const REALTIME_LICENSED_PROVIDERS = new Set<string>([]);
+
+function resolveDisplayDelayed(config: Pick<RunSnapshotConfig, 'provider' | 'displayDelayed'>): boolean {
+  const provider = config.provider ?? 'cboe-delayed';
+  if (!REALTIME_LICENSED_PROVIDERS.has(provider)) return true;
+  return config.displayDelayed ?? false;
+}
+
 interface NameData {
   symbol: string;
   underlying: Underlying;
@@ -333,7 +351,7 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapsho
     ratesAsOf: now.toISOString().slice(0, 10),
     universeHash: universeHash(selected.map((n) => n.symbol)),
     provider: config.provider ?? 'cboe-delayed',
-    displayDelayed: config.displayDelayed ?? true,
+    displayDelayed: resolveDisplayDelayed(config),
     filterDefaults: gate,
     notes: `M2.5: smile-fitted σ30/skew/residual; IV rank from history or HV proxy; composite score (${config.scorePreset ?? 'balanced'}, ${scored.basis}); q=0.`,
   };
@@ -413,7 +431,7 @@ function failedSnapshot(
       ratesAsOf: now.toISOString().slice(0, 10),
       universeHash: universeHash([]),
       provider: config.provider ?? 'cboe-delayed',
-      displayDelayed: config.displayDelayed ?? true,
+      displayDelayed: resolveDisplayDelayed(config),
       filterDefaults: gate,
       notes,
     },

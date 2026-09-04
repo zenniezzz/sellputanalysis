@@ -25,7 +25,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     exitCredit: b.exitCredit == null ? null : exitCredit,
     notes: typeof b.notes === 'string' ? b.notes.slice(0, 2000) : null,
   };
-  const trade = await getPaperTradeStore().close(uid, id, close);
+  const trade = await (await getPaperTradeStore()).close(uid, id, close);
   return trade ? NextResponse.json({ trade }) : NextResponse.json({ error: 'not found' }, { status: 404 });
 }
 
@@ -33,6 +33,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const uid = await currentUserId();
   if (!uid) return NextResponse.json({ error: 'sign in required' }, { status: 401 });
   const { id } = await params;
-  await getPaperTradeStore().delete(uid, id);
+  await (await getPaperTradeStore()).delete(uid, id);
   return NextResponse.json({ ok: true });
 }

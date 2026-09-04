@@ -30,7 +30,7 @@ export async function POST(req: Request) {
   }
 
   const userId = await currentUserId();
-  const comparison = await getFrozenStore().create({ userId, snapshotRunId, occSymbols });
+  const comparison = await (await getFrozenStore()).create({ userId, snapshotRunId, occSymbols });
 
   return NextResponse.json({ id: comparison.id, url: `/compare/${comparison.id}` }, { status: 201 });
 }

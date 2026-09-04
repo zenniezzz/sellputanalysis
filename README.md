@@ -3,7 +3,7 @@
 A daily screener for put-selling candidates. Full spec:
 [`put-sell-screener-plan.md`](./put-sell-screener-plan.md) (v3.0).
 
-## Status — M0 → M6.8 (see plan §12)
+## Status — M0 → M7 (see plan §12)
 
 | Deliverable | State |
 |---|---|
@@ -18,10 +18,10 @@ A daily screener for put-selling candidates. Full spec:
 | **`@pss/web` — Next.js 15 app**: 5-tab UI (Candidates / Universe / Compare / Snapshots / Trades). Candidates: sortable expandable table, full §7 filters + URL state, nearest-match, "why isn't X here?", CSV/JSON, scatter (6 presets, chart⇄table, cross-highlight), row-expander P&L cone + log-paper-trade. Universe: per-name rollup → click to filter. Compare: tray → transposed table (best-in-row) + overlaid cones + freezable `/compare/<id>` + CSV/print-PDF. Snapshots: bookmarks, Freeze, A↔B diff. Trades: paper-trade log + live calibration. `/glossary` · `/method` · `/docs`. Auth.js accounts + saved screens + watchlists | ✅ `npm run web` |
 | M6 | **Universe tab** (per-name rollup: put/call volume, σ30, IV rank, skew, earnings, candidate counts; click → filter) · **`/glossary`** (18 entries) · **`/method`** (BSM limits, P(ITM) vs PoP, the VRP haircut) · **`/docs`** (read API) · status banners (degraded / stale / score-basis) · first-run bar · a11y (skip link, roles, `aria-sort`, focus rings, reduced-motion) · `/api/screen` `?limit`/`?cursor` pagination |
 | M6.5 | **paper-trade tracker** — "Log paper trade" from the row expander freezes the modeled credit / PoP / EV; **Trades tab** with open/closed lists + close flow + **live calibration report** (PoP by decile bucket with binomial CI, credit fill-bias, EV realized-vs-modeled); `cli:calibration`; Beta-feedback link |
-| CI | `ci.yml` (typecheck ×2 + 230 tests + `npm audit --omit=dev --audit-level=high` gate + `next build`) · `nightly.yml` (live greek cross-check) · `dependabot.yml` (weekly npm + Actions) |
+| CI | `ci.yml` (typecheck ×2 + 251 tests + `npm audit --omit=dev --audit-level=high` gate + `next build`) · `nightly.yml` (live greek cross-check) · `dependabot.yml` (weekly npm + Actions) |
 | M6.8 | **Security**: [`SECURITY.md`](./SECURITY.md) — upgraded Next 14→**15.5**/React 19 and Vitest 1→4 to clear a critical + 5 high `npm audit` findings (0 vulnerabilities now); added write-endpoint input validation ([`app/lib/validate.ts`](apps/web/app/lib/validate.ts)); edge rate limiting (60 req/min/IP, [`middleware.ts`](apps/web/middleware.ts)). **Load test**: `k6/screen.js` — p95 went 41 s → **4.0 ms** at 100 rps after fixing a re-parsed-snapshot-per-request bottleneck, an O(rows×filters) relaxation search that ran unconditionally, and an unused-but-serialized `excludedBy` payload (details + numbers in SECURITY.md). **DR**: drilled backup→loss→restore→reproducibility-replay end to end; procedure + drill log in [`docs/runbook.md`](docs/runbook.md). |
 | ORATS 1-year IV backfill purchase · private-beta onboarding | ⏳ external (importer + tracker ready) |
-| M7 (caching hardening · `DISPLAY_DELAYED` finalize · production cutover · on-call runbook) | ⏭ next |
+| M7 | **Production cutover, for real**: fixed 5 of 6 user-data stores (auth, saved screens/watchlists, bookmarks, paper trades, frozen comparisons) that silently never used Postgres even with `DATABASE_URL` set, plus the same gap in the `cli:run-snapshot` ingestion job — drilled end-to-end (sign in → watchlist → bookmark → screen → paper trade → `pg_dump`/`pg_restore`) against a from-scratch Postgres db, which also caught & fixed a `pg` date-column round-trip bug (`"Fri Oct 16"` instead of an ISO date) and a webpack build crash in `PgSnapshotStore.migrate()`. **On-call**: [`evaluateRunAlerts`](packages/observability/src/alerts.ts) covers 4 of the 6 §10.7 alerts from a run's own fields; `instrumentation.ts` wires every server-side request error into Sentry-if-configured (closing the "nothing ever captured a route handler's errors" gap); `GET /api/health` (snapshot freshness/status) stands in for the rest pre-Grafana. **`DISPLAY_DELAYED`**: hardened to a fail-safe allowlist — a config override can no longer mislabel delayed data as realtime. **Caching**: tests for the M6.8 caches + `Cache-Control` on `/api/snapshots` and `/api/comparisons/<id>` (immutable). Full findings + the cutover checklist: [SECURITY.md](./SECURITY.md#m7-production-cutover-findings) · [docs/runbook.md](./docs/runbook.md). |
 
 Verified on live CBOE data (10 names): `status=good`, 2,840 contracts priced,
 0 IV failures, greek cross-check **1.11%** median abs (SLO < 2%), 33 candidates
@@ -64,7 +64,7 @@ the TypeScript sources directly (no build step yet).
 
 ```bash
 npm install
-npm test                              # 230 tests (+1 Postgres test, skipped without DATABASE_URL)
+npm test                              # 251 tests (+1 Postgres test, skipped without DATABASE_URL)
 npm run typecheck
 
 # one contract at a time

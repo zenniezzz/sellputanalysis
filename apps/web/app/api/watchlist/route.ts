@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const uid = await currentUserId();
   if (!uid) return NextResponse.json({ symbols: [] });
-  return NextResponse.json({ symbols: await getUserDataStore().getWatchlist(uid) });
+  return NextResponse.json({ symbols: await (await getUserDataStore()).getWatchlist(uid) });
 }
 
 export async function PUT(req: Request) {
@@ -17,7 +17,7 @@ export async function PUT(req: Request) {
   const body = (await req.json().catch(() => ({}))) as { symbols?: unknown };
   const symbols = cleanSymbols(body.symbols ?? []);
   if (!symbols) return NextResponse.json({ error: 'invalid symbols' }, { status: 400 });
-  return NextResponse.json({ symbols: await getUserDataStore().setWatchlist(uid, symbols) });
+  return NextResponse.json({ symbols: await (await getUserDataStore()).setWatchlist(uid, symbols) });
 }
 
 export async function POST(req: Request) {
@@ -26,6 +26,6 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as { symbol?: unknown };
   const symbol = cleanSymbol(body.symbol);
   if (!symbol) return NextResponse.json({ error: 'valid symbol required' }, { status: 400 });
-  const symbols = await getUserDataStore().toggleWatch(uid, symbol);
+  const symbols = await (await getUserDataStore()).toggleWatch(uid, symbol);
   return NextResponse.json({ symbols });
 }

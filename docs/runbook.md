@@ -1,7 +1,8 @@
 # Operations runbook
 
-Covers backup/disaster-recovery (plan §10.9) and the M6.8 load-test procedure.
-An on-call/alerting runbook (plan §10.7) lands with M7.
+Covers backup/disaster-recovery (plan §10.9), the k6 load-test procedure
+(M6.8), on-call alerting (plan §10.7), and the production cutover checklist
+(M7).
 
 ## 1. Backup & disaster recovery
 
@@ -71,9 +72,7 @@ Run every time, restore isn't "done" until this passes:
 
 ### 1.5 Drill log
 
-Drilled **2026-09-04** against the dev JSON store (Postgres/Neon PITR is the
-production path above; not yet provisioned — drill it for real at the M7
-production cutover and quarterly after):
+**2026-09-04, dev JSON store:**
 
 | Step | Result |
 |---|---|
@@ -84,11 +83,27 @@ production cutover and quarterly after):
 | Functional check | `/api/screen` and `/api/snapshots` both 200 against the restored store |
 | Reproducibility | replayed the same payload bundle twice post-restore; `rows` and `universe` deep-equal (1,999 rows each run), `universeHash` matched |
 
-Result: **RTO ≈ a few seconds** at this data volume (dominated by `tar`, not
-by anything store-specific) — the ≤1 h target has enormous headroom here; the
-real-world number to watch is the Postgres/Neon path once it's carrying
-production volume. No gaps found. Next drill: quarterly, or immediately after
-any schema migration.
+**2026-09-04, Postgres (local instance — Neon PITR itself not yet
+provisioned; this drills the `pg_dump`/`pg_restore` fallback path in §1.2
+step 2/4, which is identical regardless of who's hosting the server):**
+
+| Step | Result |
+|---|---|
+| `cli:run-snapshot` against `DATABASE_URL`, then sign in, add a watchlist, freeze a bookmark, save a screen, log a paper trade through the running app | all succeeded (§4 has the cutover checklist this rehearses) — surfaced the bugs in [SECURITY.md](../SECURITY.md#m7-production-cutover-findings) |
+| `pg_dump --format=custom` | 250 KB, **0.53 s** |
+| Simulate total loss (`dropdb`) | gone |
+| Restore (`createdb` + `pg_restore`) | **0.35 s** |
+| Integrity check | `snapshot_row` count identical (1,177); the paper trade's `occ_symbol`/`expiration` byte-identical |
+| Functional check | app restarted against the restored DB: `/api/screen` 200, `/api/health` reports `store: "postgres"` with the correct snapshot, the signed-in user and their watchlist are still there |
+
+Result: **RTO ≈ 1 s** at this data volume on both paths (dominated by the
+dump/tar tool, not anything store-specific) — the ≤1 h target has enormous
+headroom here; the real number to watch is Neon PITR's actual promote time
+once there's production volume and a real network hop involved. No gaps
+found in the *mechanics* of either backup path — see the M7 findings for the
+gaps that *were* found in the underlying store code. Next drill: quarterly,
+against the real Neon project once provisioned, or immediately after any
+schema migration.
 
 ## 2. Load test (M6.8 acceptance: p95 < 300 ms @ 100 rps)
 
@@ -111,3 +126,51 @@ scenario, `>99%` check pass rate.
 (it started at p95 ≈ 41 s before three fixes) and re-run against a real
 staging deployment before trusting this number for capacity planning; a
 laptop under variable background load is not a substitute for that.
+
+## 3. On-call — alert → response (plan §10.7)
+
+Six alerts. The first four are computed from a single ingestion run's own
+recorded fields ([`evaluateRunAlerts`](../packages/observability/src/alerts.ts),
+called from `cli:run-snapshot` after every run — see it fire in the console
+output and, once `SENTRY_DSN` is set, as a Sentry event per alert); the last
+two aren't run-level and need the mechanisms noted below.
+
+| # | Alert | Threshold | Detected today via | Response |
+|---|---|---|---|---|
+| 1 | Ingestion failed | `meta.status === 'failed'` | `evaluateRunAlerts` → `ingestion_failed` (critical); `heartbeat('snapshot', 'fail')` | Read the run's `logs` (stage/outcome/error per name) via `GET /api/snapshots` + the CLI's own stdout. Common cause: stage A (rates) or a provider-wide outage — check §10.11 "Provider SPOF" mitigation (CBOE-delayed fallback). Re-run `cli:run-snapshot` once the cause is fixed; the next scheduled run will also retry on its own. |
+| 2 | Completeness < 40% | `meta.dataCompleteness < 0.4` | `evaluateRunAlerts` → `completeness_low` (critical) | Check `run.namesOk` vs `namesFailed` and the per-name `ingestion_log` entries — usually a burst of per-name chain-fetch failures (rate limiting, a bad symbol). The snapshot still saves (marked `failed`/`degraded` per the completeness bands in `run.ts`) so nothing silently ships half-populated as "good". |
+| 3 | Run > 12 min | `finishedAt − startedAt` | `evaluateRunAlerts` → `run_slow` (warning) | Check provider latency / rate-limit backoff first (§11 "Rate-limit infeasibility" risk). If it's a trend rather than a one-off, that's the trigger in §11 to revisit concurrency/chain-call batching. |
+| 4 | Greek cross-check > 5% | `run.greekXcheckMedianAbsPct` | `evaluateRunAlerts` → `greek_xcheck_high` (warning); also `cli:greek-xcheck`'s own heartbeat (`nightly.yml`) | Compare against the live `cli:greek-xcheck` run for the same names — if it also spikes, suspect a pricing regression (recent change to `bsm.ts`/`iv.ts`) rather than one-off market noise; bisect via `git log` on `packages/options`. |
+| 5 | Two consecutive scheduled runs missed | no successful heartbeat in ~2× the run cadence | **Provision** `HEARTBEAT_URL_SNAPSHOT` (healthchecks.io or equivalent) pointed at a dead-man's-switch check with a grace period ≈ 2×(time between scheduled runs); until then, poll `GET /api/health` — `warnings` includes a staleness message past 6h (`STALE_AFTER_MS` in `app/api/health/route.ts`), and the endpoint itself returns `503` when stale | Check whether the scheduler (cron/platform job) itself fired — a missed heartbeat usually means the *trigger* never ran, not that `runSnapshot` failed (that's alert #1). Run `cli:run-snapshot` manually to backfill, then fix the scheduler. |
+| 6 | Read-API 5xx > 1% | error rate on `/api/*` | **Provision** a metrics pipeline (Grafana Cloud, or the hosting platform's own request-error rate) fed by `instrumentation.ts`'s `onRequestError` → `reportError` (Sentry once `SENTRY_DSN` is set — every server-side route/render error is now captured there, see [SECURITY.md](../SECURITY.md#m7-production-cutover-findings) for why that wasn't true before M7); until a real dashboard exists, `grep` server logs for `[error]` (the no-DSN fallback) or check Sentry's issue list directly | Check the error's `path`/`routeType` context (attached by `onRequestError`) to isolate which route; if it's DB-related, check `GET /api/health`'s `store` and the Postgres pool's own connection limit first. |
+
+## 4. Production cutover checklist
+
+1. **Provision Postgres** (Neon or equivalent) and set `DATABASE_URL` on the
+   deployment platform. Nothing needs a manual `psql -f schema.sql` step —
+   every `Pg*Store` self-migrates (`create table if not exists ...`) on first
+   use, in-process, the first time each store is touched (verified end-to-end
+   in this milestone's drill: sign-in → watchlist → bookmark → saved screen →
+   paper trade, all against a from-scratch database with zero manual setup).
+2. **Point the ingestion job at the same database.** `cli:run-snapshot`
+   honors `DATABASE_URL` exactly like the web app (M7 — before this it always
+   wrote JSON regardless; see [SECURITY.md](../SECURITY.md#m7-production-cutover-findings)).
+   Run it once manually first and confirm `GET /api/health` shows a fresh,
+   `good` snapshot before flipping any real traffic over.
+3. **Set `AUTH_SECRET`** (a real random value — `openssl rand -base64 32`) and
+   leave `ALLOW_DEV_LOGIN` unset (the dev Credentials provider is gated on
+   `NODE_ENV !== 'production' || ALLOW_DEV_LOGIN === '1'`; don't set the
+   latter in production).
+4. **Confirm the redistribution licensing story** (plan §3.9) before public
+   launch — today `displayDelayed` is hard-`true` for every shipped provider
+   (see the gate in `packages/pipeline/src/run.ts`), so there's nothing to
+   flip here unless/until a real-time-licensed provider is added.
+5. **Set `SENTRY_DSN`** and `npm install @sentry/node` in whichever app sets
+   it (not installed by default — see [SECURITY.md](../SECURITY.md#m7-production-cutover-findings)),
+   plus `HEARTBEAT_URL_SNAPSHOT` (and `_GREEK_XCHECK`) against a
+   dead-man's-switch provider, to light up on-call alerts #5 and #6 above.
+6. **Run the k6 load test (§2) against the actual deployment**, not a laptop,
+   before calling capacity confirmed.
+7. **Smoke-check**: `GET /api/health` → `200` with a fresh snapshot; sign in;
+   load `/`, `/glossary`, `/method`, `/docs`; freeze a screen and open its
+   `/compare/<id>` URL.

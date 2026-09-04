@@ -6,6 +6,8 @@
  *   HEARTBEAT_URL_SNAPSHOT → heartbeat('snapshot') pings it (healthchecks.io style)
  */
 
+export { evaluateRunAlerts, ALERT_THRESHOLDS, type RunAlert, type AlertSeverity } from './alerts.js';
+
 export interface ErrorContext {
   [key: string]: unknown;
 }
@@ -19,7 +21,14 @@ export async function initErrorReporting(): Promise<void> {
     return;
   }
   try {
-    const Sentry = (await import('@sentry/node')) as unknown as {
+    // `@sentry/node` isn't installed unless you opt in (it's not in any
+    // package.json here) — webpackIgnore stops Next's build from trying to
+    // resolve/bundle it at all; without it, a consumer that bundles this
+    // package (Next's `instrumentation.ts` did) crashed its own production
+    // minifier on the unresolvable import rather than leaving it to fail at
+    // runtime like a plain Node `import()` would (M7 production-cutover
+    // drill). `npm install @sentry/node` in whichever app sets SENTRY_DSN.
+    const Sentry = (await import(/* webpackIgnore: true */ '@sentry/node')) as unknown as {
       init(opts: { dsn: string; tracesSampleRate: number }): void;
       captureException(e: unknown, hint?: { extra?: ErrorContext }): void;
     };

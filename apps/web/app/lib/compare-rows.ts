@@ -39,7 +39,7 @@ export interface ResolvedComparison {
 
 /** Loads a frozen comparison and the ScreenedRows for its contracts. null if unknown. */
 export async function resolveComparison(id: string): Promise<ResolvedComparison | null> {
-  const frozen = await getFrozenStore().get(id);
+  const frozen = await (await getFrozenStore()).get(id);
   if (!frozen) return null;
 
   const store = await getStore();

@@ -7,6 +7,7 @@ export class PgAuthStore implements AuthStore {
 
   async migrate(): Promise<void> {
     await this.db.query(`
+      create extension if not exists citext;
       create table if not exists app_user (
         id uuid primary key,
         email citext unique not null,

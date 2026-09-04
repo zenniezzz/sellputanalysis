@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { MockMarketData, runSnapshot, StaticUniverseSource, type MockNameSpec } from '@pss/pipeline';
 import { StaticRatesSource } from '@pss/market-data';
 import { PgSnapshotStore } from './store.js';
+import { toIsoDate } from './util.js';
 
 const DB = process.env['DATABASE_URL'];
 const NOW = new Date('2026-09-02T14:00:00Z');
@@ -35,6 +36,18 @@ describe.skipIf(!DB)('PgSnapshotStore (integration)', () => {
       expect(back?.rows.length).toBe(snap.rows.length);
       expect(back?.run.candidatesFound).toBe(snap.run.candidatesFound);
 
+      // `date` columns come back from `pg` as JS `Date`s, not strings — a
+      // naive `String(v).slice(0, 10)` on the hydrated row silently produced
+      // "Fri Oct 16" instead of an ISO date (M7 production-cutover drill).
+      // Assert real values here, not just counts, so a regression fails loud.
+      expect(back?.meta.snapshotDay).toBe(snap.meta.snapshotDay);
+      expect(back?.meta.ratesAsOf).toBe(snap.meta.ratesAsOf);
+      for (const row of back?.rows ?? []) {
+        const original = snap.rows.find((r) => r.occSymbol === row.occSymbol);
+        expect(row.expiration).toBe(original?.expiration);
+        expect(row.expiration).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      }
+
       const latest = await store.latest();
       expect(latest?.meta.runId).toBe(snap.meta.runId);
     } finally {
@@ -47,5 +60,15 @@ describe('PgSnapshotStore (unit)', () => {
   it('is constructible with any PgQueryable', () => {
     const fake = { query: async () => ({ rows: [] }) };
     expect(new PgSnapshotStore(fake)).toBeInstanceOf(PgSnapshotStore);
+  });
+});
+
+describe('toIsoDate', () => {
+  it('formats a Date (what pg actually returns for a `date` column)', () => {
+    expect(toIsoDate(new Date('2026-10-16T00:00:00.000Z'))).toBe('2026-10-16');
+  });
+
+  it('passes through an ISO date string unchanged', () => {
+    expect(toIsoDate('2026-10-16')).toBe('2026-10-16');
   });
 });

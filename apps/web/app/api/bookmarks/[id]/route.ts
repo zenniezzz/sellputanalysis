@@ -8,6 +8,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const uid = await currentUserId();
   if (!uid) return NextResponse.json({ error: 'sign in required' }, { status: 401 });
   const { id } = await params;
-  await getBookmarkStore().delete(uid, id);
+  await (await getBookmarkStore()).delete(uid, id);
   return NextResponse.json({ ok: true });
 }

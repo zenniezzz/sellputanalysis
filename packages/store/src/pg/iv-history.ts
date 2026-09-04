@@ -1,5 +1,6 @@
 import type { IvHistoryStore, IvSample } from '../iv-history.js';
 import type { PgQueryable } from './store.js';
+import { toIsoDate } from './util.js';
 
 export class PgIvHistoryStore implements IvHistoryStore {
   constructor(private readonly db: PgQueryable) {}
@@ -49,7 +50,7 @@ export class PgIvHistoryStore implements IvHistoryStore {
       [symbol],
     );
     const d = rows[0]?.['d'];
-    return d ? String(d).slice(0, 10) : null;
+    return d ? toIsoDate(d) : null;
   }
 
   async symbols(): Promise<string[]> {
@@ -61,7 +62,7 @@ export class PgIvHistoryStore implements IvHistoryStore {
 function toSample(r: Record<string, unknown>): IvSample {
   return {
     symbol: String(r['symbol']),
-    date: String(r['date']).slice(0, 10),
+    date: toIsoDate(r['date']),
     atmIv30d: Number(r['atm_iv_30d']),
     hv20: r['hv20'] == null ? null : Number(r['hv20']),
     hv252: r['hv252'] == null ? null : Number(r['hv252']),

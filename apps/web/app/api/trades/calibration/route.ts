@@ -8,5 +8,5 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const uid = await currentUserId();
   if (!uid) return NextResponse.json({ report: calibrationReport([]) });
-  return NextResponse.json({ report: calibrationReport(await getPaperTradeStore().list(uid)) });
+  return NextResponse.json({ report: calibrationReport(await (await getPaperTradeStore()).list(uid)) });
 }

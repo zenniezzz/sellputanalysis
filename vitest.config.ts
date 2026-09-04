@@ -13,6 +13,8 @@ export default defineConfig({
       '@pss/tracker': fileURLToPath(new URL('./packages/tracker/src/index.ts', import.meta.url)),
       '@pss/compare': fileURLToPath(new URL('./packages/compare/src/index.ts', import.meta.url)),
       '@pss/diff': fileURLToPath(new URL('./packages/diff/src/index.ts', import.meta.url)),
+      // Next.js aliases this marker package internally; plain Vitest doesn't.
+      'server-only': fileURLToPath(new URL('./vitest.server-only-stub.ts', import.meta.url)),
     },
   },
   test: {

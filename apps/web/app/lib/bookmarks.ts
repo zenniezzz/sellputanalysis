@@ -6,6 +6,7 @@ import {
   type SnapshotBookmark,
   type SnapshotBookmarkStore,
 } from '@pss/store';
+import { getPgPool } from './pg-pool';
 
 export type { SnapshotBookmark, SnapshotBookmarkStore } from '@pss/store';
 
@@ -15,12 +16,18 @@ function dataDir(): string {
     : join(process.cwd(), '..', '..', '.data');
 }
 
-let cached: SnapshotBookmarkStore | null = null;
+let cached: Promise<SnapshotBookmarkStore> | null = null;
 
-/** JSON-backed by default; Postgres when DATABASE_URL is set. */
-export function getBookmarkStore(): SnapshotBookmarkStore {
-  if (cached) return cached;
-  void PgSnapshotBookmarkStore;
-  cached = new JsonSnapshotBookmarkStore(join(dataDir(), 'snapshot-bookmarks.json'));
+/** JSON-backed by default; Postgres (via the shared pool) when DATABASE_URL is set. */
+export async function getBookmarkStore(): Promise<SnapshotBookmarkStore> {
+  cached ??= (async () => {
+    const pool = await getPgPool();
+    if (pool) {
+      const store = new PgSnapshotBookmarkStore(pool);
+      await store.migrate();
+      return store;
+    }
+    return new JsonSnapshotBookmarkStore(join(dataDir(), 'snapshot-bookmarks.json'));
+  })();
   return cached;
 }

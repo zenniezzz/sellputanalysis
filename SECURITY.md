@@ -121,6 +121,113 @@ staging deployment, and scale horizontally (stateless per-instance; the caches
 above are in-process and fine to duplicate per replica) rather than trying to
 buy more headroom out of a single instance.
 
+## M7 production-cutover findings
+
+Cutting over means the real thing runs on Postgres, not the JSON-file dev
+default. Drilling that (docs/runbook.md §1.5, §4) — sign in, add a watchlist,
+freeze a bookmark, save a screen, log a paper trade, all against a from-scratch
+Postgres instance — surfaced findings that a passing test suite and a working
+`npm run web` (against the JSON store) had never exercised.
+
+### 1. Five of six user-data stores were never actually wired to Postgres
+
+`getAuthStore()`, `getUserDataStore()`, `getBookmarkStore()`,
+`getPaperTradeStore()`, and `getFrozenStore()` (`apps/web/app/lib/{stores,bookmarks,trades,frozen}.ts`)
+each imported their `Pg*Store` class, then `void`-referenced it to silence the
+unused-import lint and unconditionally constructed the JSON-file variant —
+`DATABASE_URL` only ever moved the *snapshot* store to Postgres. In a real
+deployment (most platforms don't persist a JSON file across instances or
+redeploys), every sign-in, watchlist, saved screen, bookmark, and paper trade
+would have been silently ephemeral, and none of it would be covered by the
+Postgres backup path in §1.9/docs/runbook.md §1.
+
+**Fixed**: all five now open a Postgres store (each self-migrating its own
+tables on first use) through one shared connection pool
+([`app/lib/pg-pool.ts`](apps/web/app/lib/pg-pool.ts) — a connection-limited
+instance like Neon's free tier can't afford one pool per store per serverless
+instance) when `DATABASE_URL` is set, JSON otherwise. `PssAdapter` (the
+Auth.js adapter) now takes a store *getter* rather than a resolved store,
+since which backend to use is now resolved lazily per-request rather than at
+module load. `pg` + `@types/pg` were also missing from `apps/web`'s own
+`package.json` — present locally only via root-level hoisting, which a
+minimal/production-only install wouldn't guarantee; added as a real
+dependency there (and in `apps/screener-cli`, next finding).
+
+### 2. `cli:run-snapshot` (the ingestion job) never wrote to Postgres either
+
+Same shape of bug, different file: the CLI hardcoded `JsonFileStore` /
+`JsonIvHistoryStore` / `JsonMetricReferenceStore` regardless of
+`DATABASE_URL`. Pointing the *web app* at Postgres in production would have
+shown an empty screener forever, because nothing would ever have written a
+snapshot there. **Fixed**: [`apps/screener-cli/src/stores.ts`](apps/screener-cli/src/stores.ts)
+mirrors the web app's pattern (one shared pool, self-migrating stores,
+JSON fallback) and `run-snapshot.ts` now uses it.
+
+### 3. A Postgres `date` column round-tripped as `"Fri Oct 16"`
+
+`pg` parses a `date` column into a JS `Date` by default, not a string.
+`dbRowToSnapshotRow`/`rowToMeta` (and the equivalent in `iv-history.ts`,
+`paper-trade.ts`, `metric-reference.ts`) did `String(r['col']).slice(0, 10)`
+expecting an ISO string — `String(aDate)` calls `Date.prototype.toString()`
+("Fri Oct 16 2026 00:00:00 GMT..."), so `.slice(0, 10)` silently produced
+"Fri Oct 16" for `expiration`, `snapshotDay`, and `ratesAsOf`. This was
+**live and reachable**: logging a paper trade through the actual UI
+(`LogTradeButton` sends `row.expiration` straight from `/api/screen`'s JSON)
+against Postgres 500'd outright (`invalid input syntax for type date: "Fri
+Oct 16"`), and would have silently corrupted every other consumer of those
+fields against a JSON store, which never round-trips through `pg`'s type
+parser and so never showed the bug locally. Existing tests never caught it
+because the one Postgres integration test (`pg/store.test.ts`) asserted row
+*counts*, never a hydrated row's actual field values.
+
+**Fixed**: a shared [`toIsoDate()`](packages/store/src/pg/util.ts) helper
+(`new Date(v).toISOString().slice(0, 10)` — correct for both a `Date` and a
+string) replaces every instance; `pg/store.test.ts` now asserts
+`expiration`/`snapshotDay`/`ratesAsOf` round-trip byte-identical, not just
+row counts, plus direct unit tests of `toIsoDate` against a `Date` input.
+
+### 4. `PgSnapshotStore.migrate()` crashed when Next actually bundled it
+
+`migrate()` read `schema.sql` at runtime via
+`fileURLToPath(new URL('./schema.sql', import.meta.url))`. Next's webpack
+build (`transpilePackages` includes `@pss/store`) statically intercepts
+`new URL('./literal', import.meta.url)` for its own asset-bundling — which
+broke `fileURLToPath` the moment something in the built app actually called
+`.migrate()` (nothing had, until finding #1 above got fixed):
+`TypeError: The "path" argument must be of type string or an instance of
+URL. Received an instance of URL`. Even if that resolved, a `.sql` asset
+isn't guaranteed to survive serverless file-tracing without extra config.
+
+**Fixed**: `migrate()` now inlines its SQL as a template string, matching
+every sibling `Pg*Store` (`auth.ts`, `paper-trade.ts`, etc., which were
+already self-contained). `schema.sql` remains as a human-readable, `psql
+-f`-able reference for a one-shot manual bootstrap, kept in sync by hand —
+the integration test applies the *inline* SQL for real, so drift shows up as
+a test failure. Separately, `PgAuthStore.migrate()` was missing
+`create extension if not exists citext;` (present in `schema.sql` but never
+copied into the inline version) — `app_user.email citext` failed on a
+database that had never had `schema.sql` applied manually, which, per
+finding #1, was every database until now.
+
+### 5. `instrumentation.ts` crashed the production build
+
+Wiring every server-side request error into `@pss/observability` (closing
+the "read-API 5xx > 1%" alert, which had nothing feeding it before this)
+via Next's `instrumentation.ts` hook crashed `next build`'s minifier
+(`TypeError: _webpack.WebpackError is not a constructor`, no useful stack).
+Root cause: `@sentry/node` has never actually been installed anywhere in
+this repo (`initErrorReporting()`'s `await import('@sentry/node')` was
+always going to fail over to `console.error` even in production) — bundling
+that unresolvable dynamic import specifically from `instrumentation.ts`'s
+compilation unit crashed the toolchain outright instead of failing at
+runtime the way a plain `import()` of a missing module normally would.
+**Fixed**: `/* webpackIgnore: true */` on that import tells webpack to leave
+it as a literal runtime `import()` rather than trying to resolve/bundle it.
+Sentry is still not installed — `npm install @sentry/node` in whichever app
+sets `SENTRY_DSN` (docs/runbook.md §4) to actually turn it on; until then
+this is exactly as functional as it was before (console.error fallback), now
+without breaking the build to get there.
+
 ## Known accepted risks / follow-ups
 
 - **In-memory rate limiter is per-instance.** Fine at one instance; move to a

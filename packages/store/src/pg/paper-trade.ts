@@ -2,6 +2,7 @@ import type { CloseTradeInput, OpenTradeInput, PaperTrade } from '@pss/tracker';
 import { applyClose } from '@pss/tracker';
 import { newPaperTrade, type PaperTradeStore } from '../paper-trade.js';
 import type { PgQueryable } from './store.js';
+import { toIsoDate } from './util.js';
 
 const COLS = `id, user_id, created_at, snapshot_run_id, occ_symbol, symbol, expiration, strike,
   multiplier, contracts, entry_credit, actual_fill_credit, entry_spot, breakeven,
@@ -17,7 +18,7 @@ function toTrade(r: Record<string, unknown>): PaperTrade {
     snapshotRunId: String(r['snapshot_run_id']),
     occSymbol: String(r['occ_symbol']),
     symbol: String(r['symbol']),
-    expiration: String(r['expiration']).slice(0, 10),
+    expiration: toIsoDate(r['expiration']),
     strike: Number(r['strike']),
     multiplier: Number(r['multiplier']),
     contracts: Number(r['contracts']),

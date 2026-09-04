@@ -12,7 +12,7 @@ export async function currentUserId(): Promise<string | null> {
 export async function screenContext(): Promise<ScreenContext> {
   const uid = await currentUserId();
   if (!uid) return {};
-  return { watchlist: await getUserDataStore().getWatchlist(uid) };
+  return { watchlist: await (await getUserDataStore()).getWatchlist(uid) };
 }
 
 export async function currentUser(): Promise<{ id: string; email?: string | null } | null> {

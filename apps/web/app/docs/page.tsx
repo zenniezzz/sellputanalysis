@@ -15,6 +15,7 @@ const rows: [string, string][] = [
   ['GET/POST /api/bookmarks · DELETE /api/bookmarks/<id>', 'Snapshot bookmarks (sign-in required to write).'],
   ['GET/POST/PUT/DELETE /api/screens', 'Saved named screens (sign-in required to write).'],
   ['GET/PUT /api/watchlist', 'The signed-in user’s watchlist.'],
+  ['GET /api/health', 'Operational health check: latest-snapshot freshness/status, backing store. 503 when stale or failed — see SECURITY.md / docs/runbook.md.'],
 ];
 
 export default function DocsPage() {

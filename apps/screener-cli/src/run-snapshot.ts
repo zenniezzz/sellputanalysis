@@ -26,10 +26,11 @@ import {
   StaticUniverseSource,
   type UniverseCandidate,
 } from '@pss/pipeline';
-import { FilePayloadStore, JsonFileStore, JsonIvHistoryStore, JsonMetricReferenceStore } from '@pss/store';
+import { FilePayloadStore } from '@pss/store';
 import type { IvHistoryPoint } from '@pss/options';
-import { heartbeat, initErrorReporting, reportError } from '@pss/observability';
+import { evaluateRunAlerts, heartbeat, initErrorReporting, reportError } from '@pss/observability';
 import { fmt } from './table.js';
+import { openStores } from './stores.js';
 
 const DATA_ROOT = join(process.cwd(), '.data');
 const SNAP_DIR = join(DATA_ROOT, 'snapshots');
@@ -73,9 +74,11 @@ function universeFor(args: Args): StaticUniverseSource {
 async function main(): Promise<void> {
   await initErrorReporting();
   const args = parseArgs(process.argv.slice(2));
-  const store = new JsonFileStore(SNAP_DIR);
-  const ivStore = new JsonIvHistoryStore(IV_DIR);
-  const metricStore = new JsonMetricReferenceStore(METRIC_FILE);
+  const { snapshotStore: store, ivStore, metricStore, close } = await openStores({
+    snapDir: SNAP_DIR,
+    ivDir: IV_DIR,
+    metricFile: METRIC_FILE,
+  });
   const ivHistory = async (symbol: string): Promise<IvHistoryPoint[]> => ivStore.history(symbol, 400);
   const metricReference = (asOf: string) => metricStore.reference(asOf, 365);
 
@@ -119,11 +122,12 @@ async function main(): Promise<void> {
     console.log(`bundle written → ${bundleDir}`);
   }
 
+  const dest = process.env.DATABASE_URL ? 'Postgres (DATABASE_URL)' : null;
   await store.saveSnapshot(snapshot);
   if (snapshot.meta.status !== 'failed') {
     if (snapshot.ivSamples.length > 0) {
       await ivStore.append(snapshot.ivSamples);
-      console.log(`iv-history: appended ${snapshot.ivSamples.length} σ30 samples → ${IV_DIR}`);
+      console.log(`iv-history: appended ${snapshot.ivSamples.length} σ30 samples → ${dest ?? IV_DIR}`);
     }
     if (Object.keys(snapshot.metricSamples).length > 0 && snapshot.meta.runType !== 'replay') {
       await metricStore.append(snapshot.meta.snapshotDay, snapshot.metricSamples);
@@ -165,11 +169,18 @@ async function main(): Promise<void> {
     console.log(`  (${proxied}/${candidateCount} candidates on HV-proxy / absent IV rank — own history still accruing)`);
   }
   console.log('');
-  console.log(`  saved → ${join(SNAP_DIR, meta.snapshotDay, `${meta.runId}.json`)}`);
+  console.log(`  saved → ${dest ?? join(SNAP_DIR, meta.snapshotDay, `${meta.runId}.json`)}`);
+
+  const alerts = evaluateRunAlerts(meta, run);
+  for (const a of alerts) {
+    console.log(`  ALERT [${a.severity}] ${a.code}: ${a.message}`);
+    reportError(new Error(a.message), { cli: 'run-snapshot', alert: a.code, severity: a.severity });
+  }
 
   if (!args.asOf) {
-    await heartbeat('snapshot', meta.status === 'failed' ? 'fail' : 'success');
+    await heartbeat('snapshot', alerts.length > 0 ? 'fail' : 'success');
   }
+  await close();
 }
 
 main().catch(async (e) => {

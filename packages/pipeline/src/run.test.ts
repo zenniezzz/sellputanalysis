@@ -214,3 +214,21 @@ describe('runSnapshot', () => {
     expect(replayed.run.contractsPriced).toBe(recorded.run.contractsPriced);
   });
 });
+
+describe('displayDelayed licensing gate (plan §3.9)', () => {
+  it('defaults true for the shipped (delayed) provider, no config needed', async () => {
+    const snap = await runSnapshot(config());
+    expect(snap.meta.provider).toBe('cboe-delayed');
+    expect(snap.meta.displayDelayed).toBe(true);
+  });
+
+  it('cannot be forced to false for an unlicensed provider — a config override is ignored', async () => {
+    const snap = await runSnapshot(config({ displayDelayed: false }));
+    expect(snap.meta.displayDelayed).toBe(true);
+  });
+
+  it('stays true even for an unrecognized/unconfirmed provider name', async () => {
+    const snap = await runSnapshot(config({ provider: 'some-new-realtime-feed', displayDelayed: false }));
+    expect(snap.meta.displayDelayed).toBe(true);
+  });
+});

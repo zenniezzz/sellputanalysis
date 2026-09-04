@@ -2,15 +2,17 @@ import 'server-only';
 import { join } from 'node:path';
 import type { Snapshot, SnapshotMeta } from '@pss/pipeline';
 import { JsonFileStore, PgSnapshotStore, type SnapshotStore } from '@pss/store';
+import { getPgPool } from './pg-pool';
 
 let cached: SnapshotStore | null = null;
 
 /** JsonFileStore (reads `.data/snapshots` at the repo root) unless DATABASE_URL is set. */
 export async function getStore(): Promise<SnapshotStore> {
   if (cached) return cached;
-  const url = process.env.DATABASE_URL;
-  if (url) {
-    const { store } = await PgSnapshotStore.connect(url);
+  const pool = await getPgPool();
+  if (pool) {
+    const store = new PgSnapshotStore(pool);
+    await store.migrate();
     cached = new CachedSnapshotStore(store);
   } else {
     const root =
@@ -32,10 +34,17 @@ export async function getStore(): Promise<SnapshotStore> {
  * - writes flush everything.
  */
 export class CachedSnapshotStore implements SnapshotStore {
+  // `*Fresh` tracks cache validity explicitly rather than inferring it from
+  // `now() - *At > ttlMs` alone — that comparison can't distinguish "never
+  // populated" from "populated at time 0" when `now()` is an injected clock
+  // that also starts at 0 (a real wall-clock `Date.now()` never does, but a
+  // test's fake one can — invalidation must not depend on that).
   private latestAt = 0;
   private latestVal: Snapshot | null = null;
+  private latestFresh = false;
   private listAt = 0;
   private listVal: SnapshotMeta[] = [];
+  private listFresh = false;
   private readonly byRunId = new Map<string, Snapshot | null>();
 
   constructor(
@@ -47,25 +56,27 @@ export class CachedSnapshotStore implements SnapshotStore {
 
   async saveSnapshot(snapshot: Snapshot): Promise<void> {
     await this.inner.saveSnapshot(snapshot);
-    this.latestAt = 0;
-    this.listAt = 0;
+    this.latestFresh = false;
+    this.listFresh = false;
     this.byRunId.clear();
   }
 
   async list(limit: number): Promise<SnapshotMeta[]> {
     const t = this.now();
-    if (t - this.listAt > this.ttlMs) {
+    if (!this.listFresh || t - this.listAt > this.ttlMs) {
       this.listVal = await this.inner.list(Math.max(limit, 50));
       this.listAt = t;
+      this.listFresh = true;
     }
     return this.listVal.slice(0, limit);
   }
 
   async latest(): Promise<Snapshot | null> {
     const t = this.now();
-    if (t - this.latestAt > this.ttlMs) {
+    if (!this.latestFresh || t - this.latestAt > this.ttlMs) {
       this.latestVal = await this.inner.latest();
       this.latestAt = t;
+      this.latestFresh = true;
       if (this.latestVal) this.remember(this.latestVal.meta.runId, this.latestVal);
     }
     return this.latestVal;

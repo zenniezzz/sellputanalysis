@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const uid = await currentUserId();
   if (!uid) return NextResponse.json({ trades: [] });
-  return NextResponse.json({ trades: await getPaperTradeStore().list(uid) });
+  return NextResponse.json({ trades: await (await getPaperTradeStore()).list(uid) });
 }
 
 export async function POST(req: Request) {
@@ -35,7 +35,7 @@ export async function POST(req: Request) {
   ) {
     return NextResponse.json({ error: 'missing or invalid fields' }, { status: 400 });
   }
-  const trade = await getPaperTradeStore().open(uid, {
+  const trade = await (await getPaperTradeStore()).open(uid, {
     ...b,
     strike,
     entryCredit,

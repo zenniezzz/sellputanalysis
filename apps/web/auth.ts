@@ -50,7 +50,7 @@ if (DEV_LOGIN) {
       async authorize(creds) {
         const email = String(creds?.email ?? '').trim().toLowerCase();
         if (!email || !email.includes('@')) return null;
-        const user = await getAuthStore().createUser({ email, name: email.split('@')[0] });
+        const user = await (await getAuthStore()).createUser({ email, name: email.split('@')[0] });
         return { id: user.id, email: user.email, name: user.name ?? undefined };
       },
     }),
@@ -58,7 +58,7 @@ if (DEV_LOGIN) {
 }
 
 export const config: NextAuthConfig = {
-  adapter: PssAdapter(getAuthStore()),
+  adapter: PssAdapter(getAuthStore),
   session: { strategy: 'jwt' },
   pages: { signIn: '/signin', error: '/signin' },
   providers,

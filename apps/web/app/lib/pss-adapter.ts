@@ -13,10 +13,16 @@ const toAdapterUser = (u: AuthUser): AdapterUser => ({
 /**
  * Auth.js adapter over @pss/store's AuthStore. JWT session strategy, so the
  * session methods are unused; email-magic-link + OAuth need the rest.
+ *
+ * Takes a *getter* rather than a resolved store: which store backs this
+ * (JSON vs. the shared Postgres pool) is decided lazily on first use
+ * (`getAuthStore` in app/lib/stores.ts), and NextAuth builds its config
+ * object at module load time, before any request (and its env) exists.
  */
-export function PssAdapter(store: AuthStore): Adapter {
+export function PssAdapter(getStore: () => Promise<AuthStore>): Adapter {
   return {
     async createUser(user) {
+      const store = await getStore();
       const created = await store.createUser({
         email: user.email,
         name: user.name ?? null,
@@ -26,18 +32,19 @@ export function PssAdapter(store: AuthStore): Adapter {
       return toAdapterUser(created);
     },
     async getUser(id) {
-      const u = await store.getUser(id);
+      const u = await (await getStore()).getUser(id);
       return u ? toAdapterUser(u) : null;
     },
     async getUserByEmail(email) {
-      const u = await store.getUserByEmail(email);
+      const u = await (await getStore()).getUserByEmail(email);
       return u ? toAdapterUser(u) : null;
     },
     async getUserByAccount({ provider, providerAccountId }) {
-      const u = await store.getUserByAccount(provider, providerAccountId);
+      const u = await (await getStore()).getUserByAccount(provider, providerAccountId);
       return u ? toAdapterUser(u) : null;
     },
     async updateUser(user) {
+      const store = await getStore();
       const updated = await store.updateUser({
         id: user.id!,
         ...(user.email ? { email: user.email } : {}),
@@ -50,6 +57,7 @@ export function PssAdapter(store: AuthStore): Adapter {
       return toAdapterUser(updated);
     },
     async linkAccount(account: AdapterAccount) {
+      const store = await getStore();
       await store.linkAccount({
         userId: account.userId,
         type: account.type,
@@ -64,6 +72,7 @@ export function PssAdapter(store: AuthStore): Adapter {
       });
     },
     async createVerificationToken(vt) {
+      const store = await getStore();
       const saved = await store.createVerificationToken({
         identifier: vt.identifier,
         token: vt.token,
@@ -72,7 +81,7 @@ export function PssAdapter(store: AuthStore): Adapter {
       return { identifier: saved.identifier, token: saved.token, expires: new Date(saved.expires) };
     },
     async useVerificationToken({ identifier, token }) {
-      const used = await store.useVerificationToken(identifier, token);
+      const used = await (await getStore()).useVerificationToken(identifier, token);
       return used ? { identifier: used.identifier, token: used.token, expires: new Date(used.expires) } : null;
     },
   };

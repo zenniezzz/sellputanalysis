@@ -6,6 +6,7 @@ import {
   type FrozenComparison,
   type FrozenComparisonStore,
 } from '@pss/store';
+import { getPgPool } from './pg-pool';
 
 export type { FrozenComparison, FrozenComparisonStore } from '@pss/store';
 
@@ -15,14 +16,18 @@ function dataDir(): string {
     : join(process.cwd(), '..', '..', '.data');
 }
 
-let cached: FrozenComparisonStore | null = null;
+let cached: Promise<FrozenComparisonStore> | null = null;
 
-/** JSON-backed by default; Postgres when DATABASE_URL is set. */
-export function getFrozenStore(): FrozenComparisonStore {
-  if (cached) return cached;
-  // Postgres wiring is available via PgFrozenComparisonStore + a pool; the web
-  // app currently reads snapshots from the filesystem, so match that.
-  void PgFrozenComparisonStore;
-  cached = new JsonFrozenComparisonStore(join(dataDir(), 'frozen-comparisons.json'));
+/** JSON-backed by default; Postgres (via the shared pool) when DATABASE_URL is set. */
+export async function getFrozenStore(): Promise<FrozenComparisonStore> {
+  cached ??= (async () => {
+    const pool = await getPgPool();
+    if (pool) {
+      const store = new PgFrozenComparisonStore(pool);
+      await store.migrate();
+      return store;
+    }
+    return new JsonFrozenComparisonStore(join(dataDir(), 'frozen-comparisons.json'));
+  })();
   return cached;
 }

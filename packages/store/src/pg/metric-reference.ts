@@ -1,6 +1,7 @@
 import type { ReferenceStats } from '@pss/options';
 import { aggregate, rollUp, type DailyMetricAgg, type MetricReferenceStore } from '../metric-reference.js';
 import type { PgQueryable } from './store.js';
+import { toIsoDate } from './util.js';
 
 export class PgMetricReferenceStore implements MetricReferenceStore {
   constructor(private readonly db: PgQueryable) {}
@@ -39,7 +40,7 @@ export class PgMetricReferenceStore implements MetricReferenceStore {
     );
     const agg: DailyMetricAgg[] = rows.map((r) => ({
       metric: String(r['metric']),
-      date: String(r['date']).slice(0, 10),
+      date: toIsoDate(r['date']),
       sum: Number(r['sum']),
       sumSq: Number(r['sum_sq']),
       count: Number(r['count']),

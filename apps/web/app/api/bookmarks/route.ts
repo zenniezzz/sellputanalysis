@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   const uid = await currentUserId();
   if (!uid) return NextResponse.json({ bookmarks: [] });
-  return NextResponse.json({ bookmarks: await getBookmarkStore().list(uid) });
+  return NextResponse.json({ bookmarks: await (await getBookmarkStore()).list(uid) });
 }
 
 export async function POST(req: Request) {
@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   if (!name) return NextResponse.json({ error: 'name required' }, { status: 400 });
   if (typeof body.snapshotRunId !== 'string' || !body.snapshotRunId)
     return NextResponse.json({ error: 'snapshotRunId required' }, { status: 400 });
-  const bookmark = await getBookmarkStore().create({
+  const bookmark = await (await getBookmarkStore()).create({
     userId: uid,
     name,
     snapshotRunId: body.snapshotRunId,
