@@ -44,6 +44,8 @@ interface Args {
   asOf: string | null;
   runType: 'scheduled' | 'ondemand';
   preset: 'conservative' | 'balanced' | 'aggressive';
+  includeLeveraged: boolean;
+  maxNames: number;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -57,6 +59,8 @@ function parseArgs(argv: string[]): Args {
     asOf: val('--as-of') ?? null,
     runType: (val('--run-type') as Args['runType']) ?? 'scheduled',
     preset: (val('--preset') as Args['preset']) ?? 'balanced',
+    includeLeveraged: argv.includes('--include-leveraged'),
+    maxNames: Number(val('--max-names') ?? 50),
   };
 }
 
@@ -97,8 +101,9 @@ async function main(): Promise<void> {
       scorePreset: args.preset,
       now: new Date(`${manifest.asOf}T14:00:00Z`),
       runType: 'replay',
-      maxNames: 50,
+      maxNames: args.maxNames,
       concurrency: 8,
+      includeLeveragedInverse: args.includeLeveraged,
     });
   } else {
     const now = new Date();
@@ -114,8 +119,9 @@ async function main(): Promise<void> {
       scorePreset: args.preset,
       now,
       runType: args.runType,
-      maxNames: 50,
+      maxNames: args.maxNames,
       concurrency: 8,
+      includeLeveragedInverse: args.includeLeveraged,
     });
 
     const bundleDir = await bundle.flush();

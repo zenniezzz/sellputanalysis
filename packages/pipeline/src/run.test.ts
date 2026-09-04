@@ -215,6 +215,24 @@ describe('runSnapshot', () => {
   });
 });
 
+describe('includeLeveragedInverse (plan §4.3)', () => {
+  const leveragedUniverse = new StaticUniverseSource([
+    { symbol: 'AAA', sector: 'Test', isLeveraged: true, isInverse: false, isAdr: false },
+    { symbol: 'BBB', sector: 'Test', isLeveraged: false, isInverse: false, isAdr: false },
+  ]);
+
+  it('excludes leveraged/inverse names by default', async () => {
+    const snap = await runSnapshot(config({ universe: leveragedUniverse, maxNames: 2 }));
+    expect(snap.rows.some((r) => r.symbol === 'AAA')).toBe(false);
+    expect(snap.rows.some((r) => r.symbol === 'BBB')).toBe(true);
+  });
+
+  it('includes them when includeLeveragedInverse is set', async () => {
+    const snap = await runSnapshot(config({ universe: leveragedUniverse, maxNames: 2, includeLeveragedInverse: true }));
+    expect(snap.rows.some((r) => r.symbol === 'AAA')).toBe(true);
+  });
+});
+
 describe('displayDelayed licensing gate (plan §3.9)', () => {
   it('defaults true for the shipped (delayed) provider, no config needed', async () => {
     const snap = await runSnapshot(config());

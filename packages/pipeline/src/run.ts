@@ -50,6 +50,8 @@ export interface RunSnapshotConfig {
   runType?: SnapshotMeta['runType'];
   maxNames?: number;
   universeFetchLimit?: number;
+  /** Include leveraged/inverse ETPs in the universe (plan §4.3 default: excluded — daily-rebalancing decay breaks the BSM assumptions the model relies on). */
+  includeLeveragedInverse?: boolean;
   concurrency?: number;
   gate?: Partial<CandidateGate>;
   provider?: string;
@@ -116,7 +118,9 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapsho
   // ---- Stage B: universe --------------------------------------------------
   const bStart = Date.now();
   const rawUniverse = await config.universe.list(fetchLimit);
-  const universe = applyUniverseFilters(rawUniverse, { excludeLeveragedInverse: true });
+  const universe = applyUniverseFilters(rawUniverse, {
+    excludeLeveragedInverse: !config.includeLeveragedInverse,
+  });
   log({ symbol: '', stage: 'B', outcome: 'ok', durationMs: Date.now() - bStart });
 
   const dteFetchLo = gate.dteMin - 4;
