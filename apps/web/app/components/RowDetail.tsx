@@ -4,12 +4,21 @@ import { useMemo, type ReactNode } from 'react';
 import { pnlProfile } from '@pss/options';
 import type { ScreenedRow } from '@pss/screen';
 import { num, pct, usd, usd0 } from '../lib/format';
+import { LogTradeButton } from './LogTradeButton';
 
 const CW = 520;
 const CH = 210;
 const CM = { top: 12, right: 14, bottom: 26, left: 46 };
 
-export function RowDetail({ row }: { row: ScreenedRow }) {
+export function RowDetail({
+  row,
+  snapshotRunId,
+  signedIn,
+}: {
+  row: ScreenedRow;
+  snapshotRunId: string;
+  signedIn: boolean;
+}) {
   const profile = useMemo(() => {
     if (
       row.spotAdj == null ||
@@ -33,6 +42,12 @@ export function RowDetail({ row }: { row: ScreenedRow }) {
 
   return (
     <div style={{ padding: '10px 14px', background: 'var(--panel-2)', borderTop: '1px solid var(--border)' }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 8, alignItems: 'center' }}>
+        <LogTradeButton row={row} snapshotRunId={snapshotRunId} signedIn={signedIn} />
+        <span style={{ color: 'var(--ink-faint)', fontSize: 11 }}>
+          freezes the modeled credit / PoP / EV for calibration
+        </span>
+      </div>
       <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         {profile ? <Cone profile={profile} spot={row.spot} /> : <div style={{ color: 'var(--ink-faint)' }}>P&amp;L cone unavailable (older snapshot).</div>}
 

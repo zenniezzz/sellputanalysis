@@ -20,10 +20,11 @@ import { FirstRunBar } from './FirstRunBar';
 import { Scatter } from './Scatter';
 import { SnapshotsPanel } from './SnapshotsPanel';
 import { StatusBanner } from './StatusBanner';
+import { TradesPanel } from './TradesPanel';
 import { UniversePanel } from './UniversePanel';
 import { WhyNotHere } from './WhyNotHere';
 
-type View = 'candidates' | 'compare' | 'snapshots' | 'universe';
+type View = 'candidates' | 'compare' | 'snapshots' | 'universe' | 'trades';
 
 export function CandidatesView({
   initial,
@@ -156,6 +157,12 @@ export function CandidatesView({
         <a className="badge" href="/docs">
           API
         </a>
+        <a
+          className="badge"
+          href={`mailto:beta@example.com?subject=Screener%20feedback%20(${meta.runId})`}
+        >
+          Beta feedback
+        </a>
         <AccountBar email={user?.email ?? null} />
       </div>
 
@@ -189,9 +196,14 @@ export function CandidatesView({
             <button role="tab" aria-selected={view === 'snapshots'} className={view === 'snapshots' ? 'active' : ''} onClick={() => setView('snapshots')}>
               Snapshots
             </button>
+            <button role="tab" aria-selected={view === 'trades'} className={view === 'trades' ? 'active' : ''} onClick={() => setView('trades')}>
+              Trades
+            </button>
           </nav>
 
-          {view === 'universe' ? (
+          {view === 'trades' ? (
+            <TradesPanel signedIn={!!user} />
+          ) : view === 'universe' ? (
             <UniversePanel
               onPick={(sym) => {
                 setOnlySymbol(sym);
@@ -283,6 +295,8 @@ export function CandidatesView({
                     onHover={setHighlightedOcc}
                     expandedOcc={expandedOcc}
                     onToggleExpand={(occ) => setExpandedOcc((cur) => (cur === occ ? null : occ))}
+                    snapshotRunId={meta.runId}
+                    signedIn={!!user}
                   />
 
                   <WhyNotHere filters={filters} />

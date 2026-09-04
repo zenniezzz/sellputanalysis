@@ -10,6 +10,7 @@
       "@pss/store": ["packages/store/src/index.ts"],
       "@pss/observability": ["packages/observability/src/index.ts"],
       "@pss/screen": ["packages/screen/src/index.ts"],
+      "@pss/tracker": ["packages/tracker/src/index.ts"],
       "@pss/compare": ["packages/compare/src/index.ts"],
       "@pss/diff": ["packages/diff/src/index.ts"]
     }

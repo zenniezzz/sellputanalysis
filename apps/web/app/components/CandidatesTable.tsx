@@ -86,6 +86,8 @@ export function CandidatesTable({
   onHover,
   expandedOcc,
   onToggleExpand,
+  snapshotRunId,
+  signedIn,
 }: {
   rows: ScreenedRow[];
   preset: ColumnPreset;
@@ -96,6 +98,8 @@ export function CandidatesTable({
   onHover: (occ: string | null) => void;
   expandedOcc: string | null;
   onToggleExpand: (occ: string) => void;
+  snapshotRunId: string;
+  signedIn: boolean;
 }) {
   const cols = COLUMN_PRESETS[preset].map((k) => COLS[k]);
   const { toggle, isSelected } = useCompareTray();
@@ -187,7 +191,7 @@ export function CandidatesTable({
                 {expanded && (
                   <tr>
                     <td colSpan={cols.length + 2} style={{ padding: 0, textAlign: 'left' }}>
-                      <RowDetail row={r} />
+                      <RowDetail row={r} snapshotRunId={snapshotRunId} signedIn={signedIn} />
                     </td>
                   </tr>
                 )}

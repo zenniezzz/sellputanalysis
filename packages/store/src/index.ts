@@ -25,6 +25,15 @@ export {
 } from './snapshot-bookmark.js';
 export { PgSnapshotBookmarkStore } from './pg/snapshot-bookmark.js';
 export {
+  JsonPaperTradeStore,
+  newPaperTrade,
+  type PaperTradeStore,
+  type PaperTrade,
+  type OpenTradeInput,
+  type CloseTradeInput,
+} from './paper-trade.js';
+export { PgPaperTradeStore } from './pg/paper-trade.js';
+export {
   JsonMetricReferenceStore,
   rollUp,
   aggregate,

@@ -8,6 +8,7 @@ const nextConfig = {
     '@pss/observability',
     '@pss/store',
     '@pss/screen',
+    '@pss/tracker',
   ],
   eslint: { ignoreDuringBuilds: true },
   webpack: (config) => {

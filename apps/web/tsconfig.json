@@ -20,7 +20,8 @@
       "@pss/options": ["../../packages/options/src/index.ts"],
       "@pss/pipeline": ["../../packages/pipeline/src/index.ts"],
       "@pss/store": ["../../packages/store/src/index.ts"],
-      "@pss/screen": ["../../packages/screen/src/index.ts"]
+      "@pss/screen": ["../../packages/screen/src/index.ts"],
+      "@pss/tracker": ["../../packages/tracker/src/index.ts"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
