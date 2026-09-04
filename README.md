@@ -3,7 +3,7 @@
 A daily screener for put-selling candidates. Full spec:
 [`put-sell-screener-plan.md`](./put-sell-screener-plan.md) (v3.0).
 
-## Status — M0 → M6 (see plan §12)
+## Status — M0 → M6.5 (see plan §12)
 
 | Deliverable | State |
 |---|---|
@@ -15,11 +15,12 @@ A daily screener for put-selling candidates. Full spec:
 | `@pss/screen` — filter schema + URL codec (round-trip, clamp, band-repair) · `applyScreen` (live re-filter over persisted rows, per-basis ROC/capital) · `explainSymbol` ("why isn't X here") · nearest-match relaxations · CSV export | ✅ |
 | `@pss/screener-cli` — `cli:one-name`, `cli:run-snapshot` (+`--as-of`, `--preset`), `cli:greek-xcheck` | ✅ |
 | `@pss/api` — framework-free read server | ✅ walking skeleton |
-| **`@pss/web` — Next.js 14 app**: 3-tab UI (Candidates / Compare / Snapshots). Candidates: sortable expandable table, full §7 filters + URL state, nearest-match, "why isn't X here?", CSV/JSON, scatter (6 presets, chart⇄table, cross-highlight), row-expander P&L cone. **Compare: tray (max 6) → transposed contract×metric table (best-in-row) + overlaid P&L cones + freezable `/compare/<id>` shareable link + CSV/print-PDF. Snapshots: bookmarks, Freeze, A↔B diff view.** Auth.js accounts + saved screens + watchlists | ✅ `npm run web` |
+| **`@pss/web` — Next.js 14 app**: 5-tab UI (Candidates / Universe / Compare / Snapshots / Trades). Candidates: sortable expandable table, full §7 filters + URL state, nearest-match, "why isn't X here?", CSV/JSON, scatter (6 presets, chart⇄table, cross-highlight), row-expander P&L cone + log-paper-trade. Universe: per-name rollup → click to filter. Compare: tray → transposed table (best-in-row) + overlaid cones + freezable `/compare/<id>` + CSV/print-PDF. Snapshots: bookmarks, Freeze, A↔B diff. Trades: paper-trade log + live calibration. `/glossary` · `/method` · `/docs`. Auth.js accounts + saved screens + watchlists | ✅ `npm run web` |
 | M6 | **Universe tab** (per-name rollup: put/call volume, σ30, IV rank, skew, earnings, candidate counts; click → filter) · **`/glossary`** (18 entries) · **`/method`** (BSM limits, P(ITM) vs PoP, the VRP haircut) · **`/docs`** (read API) · status banners (degraded / stale / score-basis) · first-run bar · a11y (skip link, roles, `aria-sort`, focus rings, reduced-motion) · `/api/screen` `?limit`/`?cursor` pagination |
-| CI | `ci.yml` (typecheck ×2 + 209 tests + `next build`) · `nightly.yml` (live greek cross-check) |
-| ORATS 1-year IV backfill purchase | ⏳ M2 (data purchase — importer ready) |
-| M6.5 (private beta · realized-performance / paper-trade tracker · EV calibration) | ⏭ next |
+| M6.5 | **paper-trade tracker** — "Log paper trade" from the row expander freezes the modeled credit / PoP / EV; **Trades tab** with open/closed lists + close flow + **live calibration report** (PoP by decile bucket with binomial CI, credit fill-bias, EV realized-vs-modeled); `cli:calibration`; Beta-feedback link |
+| CI | `ci.yml` (typecheck ×2 + 224 tests + `next build`) · `nightly.yml` (live greek cross-check) |
+| ORATS 1-year IV backfill purchase · private-beta onboarding | ⏳ external (importer + tracker ready) |
+| M6.8 (dependency audit · security review · DR drill · k6 load test) | ⏭ next |
 
 Verified on live CBOE data (10 names): `status=good`, 2,840 contracts priced,
 0 IV failures, greek cross-check **1.11%** median abs (SLO < 2%), 33 candidates
@@ -44,6 +45,7 @@ packages/
   screen/         filter schema, URL codec, applyScreen (+watchlist ctx), explainSymbol, CSV
   compare/        transpose N contracts × metrics, best-in-row, CSV
   diff/           diffSnapshots — added / dropped (+reason) / rank moves
+  tracker/        paper-trade model, realized P&L, PoP/credit/EV calibration
 apps/
   screener-cli/   one-name · full-snapshot (+replay) · greek-xcheck
   api/            read-only snapshot server (walking skeleton)
@@ -75,6 +77,7 @@ npm run api                                    # http://localhost:8787
 # the Next.js screener UI (reads .data/ or DATABASE_URL)
 cp apps/web/.env.example apps/web/.env.local && $EDITOR apps/web/.env.local   # set AUTH_SECRET
 npm run web                                    # http://localhost:3000
+npm run cli:calibration -- --user <id>         # paper-trade calibration report
 ```
 
 Sign in with the **Dev login** provider (any email, dev only) or the **Email**
