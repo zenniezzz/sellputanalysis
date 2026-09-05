@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   computeScores,
+  SCORE_METRICS,
   SCORE_PRESETS,
   scoreColorPosition,
   scoreOutOf10,
@@ -69,15 +70,13 @@ describe('computeScores', () => {
   });
 
   it('basis transitions cross_sectional → blended → reference with history depth', () => {
-    const rows = [row({ evToMaxloss: 0.01 }), row({ evToMaxloss: 0.002 }), row()];
+    const rows = [row({ annRoc: 0.3 }), row({ annRoc: 0.05 }), row()];
     // one metric partway into the reference window, the rest still cross-sectional
-    const young: ReferenceStats = { evToMaxloss: { mean: 0.005, stddev: 0.003, nDays: 100 } };
+    const young: ReferenceStats = { annRoc: { mean: 0.18, stddev: 0.06, nDays: 100 } };
     const mid: ReferenceStats = {
-      evToMaxloss: { mean: 0.005, stddev: 0.003, nDays: 150 },
       annRoc: { mean: 0.18, stddev: 0.06, nDays: 150 },
       ivVsFitted: { mean: 0, stddev: 0.02, nDays: 150 },
       ivRank: { mean: 45, stddev: 20, nDays: 150 },
-      spreadPct: { mean: 0.05, stddev: 0.02, nDays: 150 },
       deltaFromCenter: { mean: 0.05, stddev: 0.03, nDays: 150 },
     };
     const full = Object.fromEntries(
@@ -105,6 +104,19 @@ describe('computeScores', () => {
     const { rows: scored } = computeScores([atLowEnd, atOldCenter, atHighEnd], {});
     expect(scored[0]!.score!).toBeGreaterThan(scored[1]!.score!);
     expect(scored[1]!.score!).toBeGreaterThan(scored[2]!.score!);
+  });
+
+  it('no longer scores on EV/max-loss or spread — only annRoc, ivVsFitted, ivRank, deltaFromCenter', () => {
+    expect(SCORE_METRICS).toEqual(['annRoc', 'ivVsFitted', 'ivRank', 'deltaFromCenter']);
+    for (const preset of Object.values(SCORE_PRESETS)) {
+      expect(preset.weights).not.toHaveProperty('evToMaxloss');
+      expect(preset.weights).not.toHaveProperty('spreadPct');
+    }
+    // two rows identical except evToMaxloss/spreadPct must score identically now
+    const a = row({ evToMaxloss: 0.02, spreadPct: 0.02 });
+    const b = row({ evToMaxloss: 0.001, spreadPct: 0.2 });
+    const { rows: scored } = computeScores([a, b], {});
+    expect(scored[0]!.score).toBe(scored[1]!.score);
   });
 });
 
