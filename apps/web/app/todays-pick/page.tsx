@@ -14,18 +14,18 @@ const N_TICKERS = 3;
 const N_CONTRACTS = 15;
 
 /**
- * The "pick zone" for a ticker's contract table: the screen's own DTE window
- * and a slightly-widened delta band, plus loose liquidity guards so obviously
- * untradeable quotes (very wide spreads, near-zero interest) don't crowd out
- * real picks. The score-style thresholds (min annROC / IV rank / P(ITM) /
- * credit) are deliberately *not* applied — this list is ranked by composite
- * score, not re-screened.
+ * The "pick zone" for a ticker's contract table: the screen's own DTE and
+ * delta bands, plus loose liquidity guards so obviously untradeable quotes
+ * (very wide spreads, near-zero interest) don't crowd out real picks. The
+ * score-style thresholds (min annROC / IV rank / P(ITM) / credit) are
+ * deliberately *not* applied — this list is ranked by composite score, not
+ * re-screened.
  */
 const PICK_ZONE = {
   dteMin: DEFAULT_FILTERS.dteMin,
   dteMax: DEFAULT_FILTERS.dteMax,
-  absDeltaLo: 0.1,
-  absDeltaHi: 0.3,
+  absDeltaLo: DEFAULT_FILTERS.deltaLo,
+  absDeltaHi: DEFAULT_FILTERS.deltaHi,
   maxSpreadPct: 0.25,
   minOpenInterest: 100,
 };
