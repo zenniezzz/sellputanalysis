@@ -26,7 +26,7 @@ const NAMES: MockNameSpec[] = [
   { symbol: 'BBB', spot: 250, iv: 0.45 },
   { symbol: 'CCC', spot: 40, iv: 0.6 },
   { symbol: 'DDD', spot: 500, iv: 0.25, settlement: 'cash' },
-  { symbol: 'EEE', spot: 8, iv: 0.5 }, // below the $10 price floor
+  { symbol: 'EEE', spot: 3, iv: 0.5 }, // below the $5 price floor
   { symbol: 'FFF', spot: 120, iv: 0.35, fail: true }, // chain fetch fails
 ];
 
@@ -62,7 +62,7 @@ describe('runSnapshot', () => {
     }
   });
 
-  it('excludes the sub-$10 name and the failing name; ranks by put volume', async () => {
+  it('excludes the sub-$5 name and the failing name; ranks by put volume', async () => {
     const snap = await runSnapshot(config());
     const symbols = new Set(snap.rows.map((r) => r.symbol));
     expect(symbols.has('EEE')).toBe(false);

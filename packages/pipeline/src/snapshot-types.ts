@@ -25,7 +25,14 @@ export const DEFAULT_GATE: CandidateGate = {
   maxProbItm: 0.35,
   minOpenInterest: 500,
   minVolume: 100,
-  minUnderlyingPrice: 10,
+  // stage C's hard pre-filter (run.ts) -- unlike the other fields here, a
+  // name below this is never even fetched, so the screen's own
+  // minUnderlyingPrice can't relax past it after the fact. Kept in sync with
+  // @pss/screen's DEFAULT_FILTERS.minUnderlyingPrice (also 5) for exactly
+  // that reason -- a mismatch here silently drops a name the screen claims
+  // to allow (found via TSLL: priced at ~$9, invisible under the old $10
+  // floor even after the screen's own default moved to $5).
+  minUnderlyingPrice: 5,
 };
 
 export interface ModelCaution {

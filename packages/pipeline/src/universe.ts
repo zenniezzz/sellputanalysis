@@ -32,6 +32,15 @@ const S = (symbol: string, sector: string, extra: Partial<UniverseCandidate> = {
 export const DEFAULT_UNIVERSE: UniverseCandidate[] = [
   // broad ETFs
   S('SPY', 'ETF-Broad'), S('QQQ', 'ETF-Broad'), S('IWM', 'ETF-Broad'), S('DIA', 'ETF-Broad'),
+  // leveraged / inverse — must be filtered out by applyUniverseFilters. Kept
+  // near the front of the list (not at the tail) so a full-universe pull
+  // reaches them before stage C's per-name fetches run into the provider's
+  // rate limit — a real, reproduced issue: with them last, they were the
+  // ones dropped on every attempt at a 77-name pull, every time.
+  S('TQQQ', 'ETF-Leveraged', { isLeveraged: true }),
+  S('SQQQ', 'ETF-Inverse', { isInverse: true }),
+  S('SOXL', 'ETF-Leveraged', { isLeveraged: true }),
+  S('TSLL', 'ETF-Leveraged', { isLeveraged: true }),
   // sector / thematic ETFs
   S('XLF', 'ETF-Sector'), S('XLE', 'ETF-Sector'), S('SMH', 'ETF-Sector'), S('GDX', 'ETF-Sector'),
   S('ARKK', 'ETF-Sector'), S('SLV', 'ETF-Commodity'), S('GLD', 'ETF-Commodity'), S('USO', 'ETF-Commodity'),
@@ -55,11 +64,6 @@ export const DEFAULT_UNIVERSE: UniverseCandidate[] = [
   S('COIN', 'Crypto-adjacent'), S('MARA', 'Crypto-adjacent'), S('MSTR', 'Crypto-adjacent'),
   S('PLTR', 'Technology'), S('SOFI', 'Financials'), S('CVNA', 'Consumer-Disc'), S('SMCI', 'Technology'),
   S('UBER', 'Technology'), S('SNAP', 'Communication'), S('RIVN', 'Consumer-Disc'),
-  // leveraged / inverse — must be filtered out by applyUniverseFilters
-  S('TQQQ', 'ETF-Leveraged', { isLeveraged: true }),
-  S('SQQQ', 'ETF-Inverse', { isInverse: true }),
-  S('SOXL', 'ETF-Leveraged', { isLeveraged: true }),
-  S('TSLL', 'ETF-Leveraged', { isLeveraged: true }),
 ];
 
 export class StaticUniverseSource implements UniverseSource {
