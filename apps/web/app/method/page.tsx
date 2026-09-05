@@ -5,6 +5,16 @@ import { DEFAULT_GATE } from '@pss/pipeline';
 export const metadata = { title: 'Model & method — Put-Sell Screener' };
 
 const H = { fontSize: 14, marginTop: 26 } as const;
+const TH = {
+  textAlign: 'left',
+  padding: '6px 12px 6px 0',
+  borderBottom: '1px solid var(--border)',
+  color: 'var(--ink-faint)',
+  fontSize: 11,
+  textTransform: 'uppercase',
+  letterSpacing: '.06em',
+} as const;
+const TD = { padding: '6px 12px 6px 0', borderBottom: '1px solid var(--border-soft)' } as const;
 const pct = (x: number) => `${(x * 100).toFixed(0)}%`;
 
 const EARNINGS_LABEL: Record<string, string> = {
@@ -88,69 +98,34 @@ export default function MethodPage() {
         price ≥ ${DEFAULT_GATE.minUnderlyingPrice}.
       </p>
 
-      <h2 style={H}>Pricing model</h2>
-      <p>
-        Every contract is priced with one <strong>Black–Scholes–Merton</strong> model, so the
-        comparison across names is fair. Implied volatility is solved from the NBBO mid with Brent’s
-        method; greeks are analytic. We cross-check our IV against the data vendor’s nightly and alert
-        if the median deviation exceeds 2%.
-      </p>
-      <p>Where BSM is least trustworthy, and what the flags mean:</p>
-      <ul>
-        <li>
-          <strong>div</strong> — no discrete dividend schedule yet, so q = 0. Overstates the value of
-          puts on names with a large dividend before expiry, and understates early-assignment risk.
-        </li>
-        <li>
-          <strong>borrow</strong> — a hard-to-borrow underlying breaks put-call parity; IV solved from
-          the mark is inflated and the contract can look richer to sell than it is.
-        </li>
-        <li>
-          <strong>parity</strong> — the quote is below intrinsic (borrow cost or American
-          early-exercise value); IV is unidentifiable and the row is excluded from candidacy.
-        </li>
-        <li>
-          <strong>American exercise</strong> — v1 uses European values and shows an
-          “assignment watch” flag rather than re-pricing. Cash-settled index options are genuinely
-          European and skip this entirely.
-        </li>
-      </ul>
-
-      <h2 style={H}>Probabilities: two different numbers</h2>
-      <p>
-        <strong>P(ITM)</strong> is <em>risk-neutral</em> — the model’s N(−d2). It is not the real-world
-        frequency with which the put finishes ITM. <strong>PoP</strong> (probability of profit) is
-        computed under a <em>forecast</em> distribution and is the one to reason about. The gap
-        between them is the variance risk premium.
-      </p>
-
-      <h2 style={H}>Expected value and the VRP haircut</h2>
-      <p>
-        Under the risk-neutral measure, the EV of selling at fair value is ≈ 0 net of costs — useless
-        for ranking. The put-selling edge, when it exists, is that implied volatility has historically
-        tended to exceed subsequently realized volatility. So EV is computed under a forecast
-        lognormal whose volatility is a blend of realized and implied vol, shrunk toward its 1-year
-        median and multiplied by a <strong>VRP haircut</strong> (0.90 by default).
-      </p>
-      <p>
-        This means the EV ranking is <strong>only as good as that haircut assumption</strong>. If you
-        distrust it, sort by <strong>annualized ROC</strong> or <strong>decay yield</strong> instead —
-        both are forecast-free. The haircut will be recalibrated against a realized-performance log
-        once one exists.
-      </p>
-
       <h2 style={H}>Composite score</h2>
-      <p>
-        A weighted sum of z-scores taken against a rolling 1-year reference distribution — so a
-        contract’s score does not move when you change an unrelated filter. While that reference is
-        still accruing, z-scores fall back to the current snapshot’s robust (median/MAD)
-        cross-section; the <strong>score basis</strong> chip in the header says which
-        (cross-sectional → blended → reference). It's shown as a <strong>0–10 rating</strong>{' '}
-        (higher is better) — a fixed rescale of the underlying z-score for readability, over the
-        same domain the row shading uses; sorting, filtering, CSV/JSON export, and the Compare tab's
-        best-in-row picks all still use the full-precision value underneath, so nothing about the
-        ranking itself changes.
-      </p>
+      <p>A weighted sum of three inputs — this is the whole rule set:</p>
+      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
+        <thead>
+          <tr>
+            <th style={TH}>Metric</th>
+            <th style={TH}>Weight</th>
+            <th style={TH}>Direction</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={TD}>Annualized ROC</td>
+            <td style={TD}>+1/3</td>
+            <td style={TD}>higher is better</td>
+          </tr>
+          <tr>
+            <td style={TD}>IV vs. fitted (residual)</td>
+            <td style={TD}>+1/3</td>
+            <td style={TD}>higher is better</td>
+          </tr>
+          <tr>
+            <td style={TD}>|Δ| distance from 0.15</td>
+            <td style={TD}>−1/3</td>
+            <td style={TD}>closer is better</td>
+          </tr>
+        </tbody>
+      </table>
 
       <h2 style={H}>Data</h2>
       <p>
