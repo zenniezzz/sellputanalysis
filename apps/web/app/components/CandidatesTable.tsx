@@ -1,11 +1,11 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
+import { scoreOutOf10 } from '@pss/options';
 import { COLUMN_PRESETS, type ColumnPreset, type ScreenedRow, type SortDir, type SortKey } from '@pss/screen';
 import { changePct, num, pct, score10, usd, usd0, int } from '../lib/format';
 import { GLOSSARY_BY_ID } from '../lib/glossary';
 import { RowDetail } from './RowDetail';
-import { useCompareTray } from './CompareTray';
 
 /** column key → glossary entry id (for header tooltips + jump links). */
 const GLOSSARY_FOR: Partial<Record<SortKey, string>> = {
@@ -76,6 +76,12 @@ function signCls(x: number | null): string {
   return x > 0 ? 'pos' : x < 0 ? 'neg' : '';
 }
 
+/** 0-100 fill width for the score pill's background bar (score10 is 0-10, floored at 0). */
+function scorePct(score: number | null): number {
+  const v = scoreOutOf10(score);
+  return v == null ? 0 : Math.max(0, Math.min(100, (v / 10) * 100));
+}
+
 const FLAG_LABEL: Record<string, string> = {
   borrow: 'borrow',
   dividend: 'div',
@@ -111,7 +117,6 @@ export function CandidatesTable({
   signedIn: boolean;
 }) {
   const cols = COLUMN_PRESETS[preset].map((k) => COLS[k]);
-  const { toggle, isSelected } = useCompareTray();
 
   if (rows.length === 0) {
     return <div className="empty">No candidates match the current filters.</div>;
@@ -122,7 +127,6 @@ export function CandidatesTable({
       <table className="grid">
         <thead>
           <tr>
-            <th className="ck" title="add to Compare" aria-label="compare" />
             {cols.map((c) => {
               const g = GLOSSARY_FOR[c.key] ? GLOSSARY_BY_ID[GLOSSARY_FOR[c.key]!] : undefined;
               return (
@@ -172,18 +176,19 @@ export function CandidatesTable({
                     background: r.occSymbol === highlightedOcc ? 'var(--panel-2)' : undefined,
                   }}
                 >
-                  <td className="ck" onClick={(e) => e.stopPropagation()}>
-                    <input
-                      type="checkbox"
-                      aria-label={`compare ${r.symbol} ${r.expiration} ${r.strike}P`}
-                      checked={isSelected(r.occSymbol)}
-                      onChange={() => toggle(r.occSymbol)}
-                    />
-                  </td>
                   {cols.map((c) => (
                     <td key={c.key} className={`${c.key === 'symbol' ? 'sym' : ''} ${c.cls?.(r) ?? ''}`}>
                       {c.key === 'symbol' && (expanded ? '▾ ' : '▸ ')}
-                      {c.render(r)}
+                      {c.key === 'score' ? (
+                        <span
+                          className="score-pill"
+                          style={{ '--p': `${scorePct(r.score)}%` } as CSSProperties}
+                        >
+                          {c.render(r)}
+                        </span>
+                      ) : (
+                        c.render(r)
+                      )}
                       {c.key === 'symbol' && r.assignmentWatch && <span className="chip warn">assign</span>}
                       {c.key === 'symbol' &&
                         flags.map((f) => (
@@ -196,7 +201,7 @@ export function CandidatesTable({
                 </tr>
                 {expanded && (
                   <tr>
-                    <td colSpan={cols.length + 1} style={{ padding: 0, textAlign: 'left' }}>
+                    <td colSpan={cols.length} style={{ padding: 0, textAlign: 'left' }}>
                       <RowDetail row={r} snapshotRunId={snapshotRunId} signedIn={signedIn} />
                     </td>
                   </tr>

@@ -33,20 +33,10 @@ export function TopPutVolumeMonthly({ onPick }: { onPick: (symbol: string) => vo
   if (data == null || data.rows.length === 0) return null;
 
   return (
-    <div className="panel" style={{ padding: 12, marginBottom: 14 }}>
-      <div
-        style={{
-          fontSize: 10,
-          textTransform: 'uppercase',
-          letterSpacing: '.08em',
-          color: 'var(--ink-faint)',
-          marginBottom: 8,
-        }}
-      >
-        Top 25 by put volume — trailing {data.windowDays}d average
-      </div>
+    <div className="panel-card">
+      <div className="panel-card-title">Top 25 by put volume — trailing {data.windowDays}d average</div>
       {data.daysAvailable < data.windowDays && (
-        <div className="sub" style={{ marginBottom: 8 }}>
+        <div className="sub" style={{ marginBottom: 10, color: 'var(--ink-dim)', fontSize: 12 }}>
           {data.daysAvailable} of {data.windowDays} days accrued so far ({data.oldestDay} → {data.newestDay}) —
           averages will firm up as more daily snapshots land.
         </div>

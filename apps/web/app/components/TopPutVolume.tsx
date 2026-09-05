@@ -56,18 +56,8 @@ export function TopPutVolume({
   const label = title ?? `Top ${N} by put volume — today's snapshot`;
 
   return (
-    <div className="panel" style={{ padding: 12, marginBottom: 14 }}>
-      <div
-        style={{
-          fontSize: 10,
-          textTransform: 'uppercase',
-          letterSpacing: '.08em',
-          color: 'var(--ink-faint)',
-          marginBottom: 8,
-        }}
-      >
-        {label}
-      </div>
+    <div className="panel-card">
+      <div className="panel-card-title">{label}</div>
       <div className="tablewrap">
         <table className="grid">
           <thead>
