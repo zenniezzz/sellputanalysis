@@ -137,7 +137,12 @@ function metricValue(row: ScoreInputRow, m: ScoreMetric): number | null {
     case 'spreadPct':
       return row.spreadPct;
     case 'deltaFromCenter':
-      return row.delta == null ? null : Math.abs(Math.abs(row.delta) - 0.25);
+      // Target is 0.15 -- the low (safer) end of the default 0.15-0.25 |Δ|
+      // band, not its midpoint: the closer |Δ| is to 0.15, the better. The
+      // metric name is a holdover from when the default band was 0.15-0.35
+      // and 0.25 really was the center; kept as-is since it's also the key
+      // shown in the row-detail "score components" breakdown.
+      return row.delta == null ? null : Math.abs(Math.abs(row.delta) - 0.15);
   }
 }
 

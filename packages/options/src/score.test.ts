@@ -20,7 +20,7 @@ function row(over: Partial<ScoreInputRow> = {}): ScoreInputRow {
     ivVsFitted: 0.0,
     ivRank: 45,
     spreadPct: 0.05,
-    delta: -0.25,
+    delta: -0.15, // at the deltaFromCenter target, so this metric contributes ~0 by default
     caution: CLEAN,
     ...over,
   };
@@ -96,6 +96,15 @@ describe('computeScores', () => {
       {},
     );
     expect(metricSamples.annRoc).toEqual([0.2, 0.1]);
+  });
+
+  it('rewards |Δ| closest to 0.15 (the low end of the default band), not 0.25', () => {
+    const atLowEnd = row({ delta: -0.15 });
+    const atOldCenter = row({ delta: -0.25 }); // used to be the target pre-change
+    const atHighEnd = row({ delta: -0.35 });
+    const { rows: scored } = computeScores([atLowEnd, atOldCenter, atHighEnd], {});
+    expect(scored[0]!.score!).toBeGreaterThan(scored[1]!.score!);
+    expect(scored[1]!.score!).toBeGreaterThan(scored[2]!.score!);
   });
 });
 
