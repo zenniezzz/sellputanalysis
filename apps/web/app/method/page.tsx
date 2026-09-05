@@ -27,7 +27,8 @@ export default function MethodPage() {
   return (
     <article style={{ maxWidth: '70ch', margin: '0 auto', padding: '8px 0 60px', lineHeight: 1.65 }}>
       <p>
-        <Link href="/">← Screener</Link> · <Link href="/glossary">Glossary</Link>
+        <Link href="/">← Screener</Link> · <Link href="/todays-pick">Today&rsquo;s pick</Link> ·{' '}
+        <Link href="/glossary">Glossary</Link>
       </p>
       <h1 style={{ fontSize: 20 }}>Model &amp; method</h1>
       <p>

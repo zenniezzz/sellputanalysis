@@ -8,7 +8,8 @@ export default function GlossaryPage() {
   return (
     <article style={{ maxWidth: '68ch', margin: '0 auto', padding: '8px 0 60px', lineHeight: 1.6 }}>
       <p>
-        <Link href="/">← Screener</Link> · <Link href="/method">Model &amp; method</Link>
+        <Link href="/">← Screener</Link> · <Link href="/todays-pick">Today&rsquo;s pick</Link> ·{' '}
+        <Link href="/method">Model &amp; method</Link>
       </p>
       <h1 style={{ fontSize: 20 }}>Glossary</h1>
       {groups.map((g) => (
