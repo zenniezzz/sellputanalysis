@@ -19,10 +19,10 @@ describe('rollUp', () => {
 
   it('excludes samples outside the trailing window', () => {
     const rows: DailyMetricAgg[] = [
-      { date: '2025-01-01', metric: 'ivRank', sum: 100, sumSq: 5000, count: 2 },
-      { date: '2026-08-01', metric: 'ivRank', sum: 90, sumSq: 4100, count: 2 },
+      { date: '2025-01-01', metric: 'annRoc', sum: 100, sumSq: 5000, count: 2 },
+      { date: '2026-08-01', metric: 'annRoc', sum: 90, sumSq: 4100, count: 2 },
     ];
-    expect(rollUp(rows, '2026-08-15', 30).ivRank!.nDays).toBe(1);
+    expect(rollUp(rows, '2026-08-15', 30).annRoc!.nDays).toBe(1);
   });
 
   it('drops a metric with fewer than 2 samples', () => {

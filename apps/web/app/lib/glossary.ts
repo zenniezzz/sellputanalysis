@@ -130,7 +130,7 @@ export const GLOSSARY: GlossaryEntry[] = [
     term: 'Composite score',
     group: 'Ranking',
     definition:
-      'Weighted sum of z-scores (annROC, IV-vs-fitted residual, IV rank; minus distance of |Δ| from 0.15 — the low/safer end of the default band) with fixed penalties for the caution flags. EV/max-loss and spread are shown as their own columns but no longer feed the score directly. Blended between a rolling 1-year reference distribution and the current snapshot’s cross-section — the “score basis” chip shows which. Displayed as a 0–10 rating (higher is better) — a rescaling of the underlying z-score for readability; sorting, CSV/JSON export, and comparisons still use the full-precision value underneath.',
+      'Weighted sum of z-scores — annROC, IV-vs-fitted residual, and distance of |Δ| from 0.15 (the low/safer end of the default band), each weighted equally at one-third — with fixed penalties for the caution flags. EV/max-loss, spread, and IV rank are shown as their own columns/chips but no longer feed the score directly (IV rank is null for every contract right now regardless — it needs ~60 days of accrued own-history, and history has only just started accruing). Blended between a rolling 1-year reference distribution and the current snapshot’s cross-section — the “score basis” chip shows which. Displayed as a 0–10 rating (higher is better) — a rescaling of the underlying z-score for readability; sorting, CSV/JSON export, and comparisons still use the full-precision value underneath.',
   },
   {
     id: 'assignment',

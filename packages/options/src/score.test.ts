@@ -16,6 +16,10 @@ function row(over: Partial<ScoreInputRow> = {}): ScoreInputRow {
   return {
     priced: true,
     isCandidate: true,
+    // evToMaxloss/ivRank/spreadPct are still real ScoreInputRow fields (kept
+    // so run.ts's row construction didn't need to change) but no longer feed
+    // the score at all -- these three placeholder values are never read by
+    // computeScores; see the "no longer scores on ..." test below.
     evToMaxloss: 0.006,
     annRoc: 0.18,
     ivVsFitted: 0.0,
@@ -30,8 +34,8 @@ function row(over: Partial<ScoreInputRow> = {}): ScoreInputRow {
 describe('computeScores', () => {
   it('ranks a better candidate above a worse one (cross-sectional)', () => {
     const rows = [
-      row({ evToMaxloss: 0.012, annRoc: 0.3, ivVsFitted: 0.03, ivRank: 70, spreadPct: 0.03 }),
-      row({ evToMaxloss: 0.001, annRoc: 0.05, ivVsFitted: -0.02, ivRank: 15, spreadPct: 0.12 }),
+      row({ annRoc: 0.3, ivVsFitted: 0.03 }),
+      row({ annRoc: 0.05, ivVsFitted: -0.02 }),
       row(),
     ];
     const { rows: scored, basis } = computeScores(rows, {});
@@ -76,7 +80,6 @@ describe('computeScores', () => {
     const mid: ReferenceStats = {
       annRoc: { mean: 0.18, stddev: 0.06, nDays: 150 },
       ivVsFitted: { mean: 0, stddev: 0.02, nDays: 150 },
-      ivRank: { mean: 45, stddev: 20, nDays: 150 },
       deltaFromCenter: { mean: 0.05, stddev: 0.03, nDays: 150 },
     };
     const full = Object.fromEntries(
@@ -106,17 +109,25 @@ describe('computeScores', () => {
     expect(scored[1]!.score!).toBeGreaterThan(scored[2]!.score!);
   });
 
-  it('no longer scores on EV/max-loss or spread — only annRoc, ivVsFitted, ivRank, deltaFromCenter', () => {
-    expect(SCORE_METRICS).toEqual(['annRoc', 'ivVsFitted', 'ivRank', 'deltaFromCenter']);
+  it('scores on only three inputs now: annRoc, ivVsFitted, deltaFromCenter', () => {
+    expect(SCORE_METRICS).toEqual(['annRoc', 'ivVsFitted', 'deltaFromCenter']);
     for (const preset of Object.values(SCORE_PRESETS)) {
       expect(preset.weights).not.toHaveProperty('evToMaxloss');
       expect(preset.weights).not.toHaveProperty('spreadPct');
+      expect(preset.weights).not.toHaveProperty('ivRank');
     }
-    // two rows identical except evToMaxloss/spreadPct must score identically now
-    const a = row({ evToMaxloss: 0.02, spreadPct: 0.02 });
-    const b = row({ evToMaxloss: 0.001, spreadPct: 0.2 });
+    // two rows identical except evToMaxloss/spreadPct/ivRank must score identically now
+    const a = row({ evToMaxloss: 0.02, spreadPct: 0.02, ivRank: 90 });
+    const b = row({ evToMaxloss: 0.001, spreadPct: 0.2, ivRank: 5 });
     const { rows: scored } = computeScores([a, b], {});
     expect(scored[0]!.score).toBe(scored[1]!.score);
+  });
+
+  it('balanced weights the three remaining inputs equally (1/3 each, signed for direction)', () => {
+    const w = SCORE_PRESETS.balanced.weights;
+    expect(w.annRoc).toBeCloseTo(1 / 3, 10);
+    expect(w.ivVsFitted).toBeCloseTo(1 / 3, 10);
+    expect(w.deltaFromCenter).toBeCloseTo(-1 / 3, 10);
   });
 });
 

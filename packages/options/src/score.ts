@@ -16,9 +16,9 @@
  * Penalties are fixed (not z-scored) and subtracted after the weighted sum.
  */
 
-export type ScoreMetric = 'annRoc' | 'ivVsFitted' | 'ivRank' | 'deltaFromCenter';
+export type ScoreMetric = 'annRoc' | 'ivVsFitted' | 'deltaFromCenter';
 
-export const SCORE_METRICS: ScoreMetric[] = ['annRoc', 'ivVsFitted', 'ivRank', 'deltaFromCenter'];
+export const SCORE_METRICS: ScoreMetric[] = ['annRoc', 'ivVsFitted', 'deltaFromCenter'];
 
 export interface ScoreCaution {
   borrow: boolean;
@@ -57,11 +57,16 @@ export interface ScoreConfig {
 }
 
 const BALANCED: ScoreConfig = {
+  // Equal thirds across the three remaining inputs -- annRoc and ivVsFitted
+  // positive (higher is better), deltaFromCenter negative (closer to the
+  // 0.15 target is better). IV rank was dropped rather than reweighted
+  // (plan §6.3's cold-start gap: with 0 days of accrued history right now,
+  // ivRank/ivRankProxy is null for every row anyway, so it was already
+  // contributing nothing to any live score).
   weights: {
-    annRoc: 0.22,
-    ivVsFitted: 0.16,
-    ivRank: 0.14,
-    deltaFromCenter: -0.1,
+    annRoc: 1 / 3,
+    ivVsFitted: 1 / 3,
+    deltaFromCenter: -1 / 3,
   },
   penalties: { borrow: 0.5, dividend: 0.5, earningsBeforeExpiry: 1.0, ivRankProxy: 0.75 },
   minReferenceDays: 60,
@@ -76,7 +81,6 @@ export const SCORE_PRESETS: Record<'conservative' | 'balanced' | 'aggressive', S
     weights: {
       annRoc: 0.16,
       ivVsFitted: 0.22,
-      ivRank: 0.22,
       deltaFromCenter: -0.18,
     },
     penalties: { borrow: 0.75, dividend: 0.75, earningsBeforeExpiry: 1.5, ivRankProxy: 1.1 },
@@ -86,7 +90,6 @@ export const SCORE_PRESETS: Record<'conservative' | 'balanced' | 'aggressive', S
     weights: {
       annRoc: 0.28,
       ivVsFitted: 0.12,
-      ivRank: 0.06,
       deltaFromCenter: -0.06,
     },
     penalties: { borrow: 0.25, dividend: 0.25, earningsBeforeExpiry: 0.75, ivRankProxy: 0.4 },
@@ -111,8 +114,6 @@ function metricValue(row: ScoreInputRow, m: ScoreMetric): number | null {
       return row.annRoc;
     case 'ivVsFitted':
       return row.ivVsFitted;
-    case 'ivRank':
-      return row.ivRank;
     case 'deltaFromCenter':
       // Target is 0.15 -- the low (safer) end of the default 0.15-0.25 |Δ|
       // band, not its midpoint: the closer |Δ| is to 0.15, the better. The
