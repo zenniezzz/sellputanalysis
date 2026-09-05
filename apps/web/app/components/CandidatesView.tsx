@@ -148,15 +148,6 @@ export function CandidatesView({
             )}
           </div>
 
-          <TopPutVolume onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))} />
-          <TopPutVolume
-            onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))}
-            minSpot={5}
-            maxSpot={200}
-            title="Top 25 by put volume — today, $5–$200 spot"
-          />
-          <TopPutVolumeMonthly onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))} />
-
           {counts.visible === 0 && nearestMatches.length > 0 && (
             <div className="nearest">
               No matches. Nearest:{' '}
@@ -187,6 +178,15 @@ export function CandidatesView({
           />
 
           <WhyNotHere filters={filters} />
+
+          <TopPutVolume onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))} />
+          <TopPutVolume
+            onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))}
+            minSpot={5}
+            maxSpot={200}
+            title="Top 25 by put volume — today, $5–$200 spot"
+          />
+          <TopPutVolumeMonthly onPick={(sym) => setOnlySymbol((cur) => (cur === sym ? null : sym))} />
 
           <p className="disclaimer">
             Screening tool, not investment advice. Selling puts — cash-secured or on margin — carries
