@@ -52,11 +52,11 @@ export interface ScreenFilters {
 
 export const DEFAULT_FILTERS: ScreenFilters = {
   intendedOrderSize: 10,
-  dteMin: 25,
+  dteMin: 20,
   dteMax: 45,
   deltaLo: 0.15,
   deltaHi: 0.25,
-  maxSpreadPct: 0.08,
+  maxSpreadPct: 0.1,
   minEntryCredit: 0.3,
   minAnnRoc: 0.12,
   maxProbItm: 0.35,

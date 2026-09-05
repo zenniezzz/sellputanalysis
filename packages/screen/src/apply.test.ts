@@ -44,8 +44,8 @@ describe('applyScreen', () => {
     for (const r of res.visible) {
       expect(Math.abs(r.delta!)).toBeGreaterThanOrEqual(0.15 - 1e-9);
       expect(Math.abs(r.delta!)).toBeLessThanOrEqual(DEFAULT_FILTERS.deltaHi + 1e-9);
-      expect(r.dte).toBeGreaterThanOrEqual(25);
-      expect(r.spreadPct).toBeLessThanOrEqual(0.08);
+      expect(r.dte).toBeGreaterThanOrEqual(DEFAULT_FILTERS.dteMin);
+      expect(r.spreadPct).toBeLessThanOrEqual(DEFAULT_FILTERS.maxSpreadPct);
     }
     expect(res.counts.priced).toBeGreaterThan(res.counts.visible);
   });
