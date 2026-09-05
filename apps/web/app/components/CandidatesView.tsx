@@ -112,6 +112,9 @@ export function CandidatesView({
           {meta.displayDelayed ? 'delayed data' : 'realtime'}
         </span>
         <span className="spacer" />
+        <a className="navlink" href="/method">
+          Method
+        </a>
         <a className="navlink" href="/glossary">
           Glossary
         </a>
