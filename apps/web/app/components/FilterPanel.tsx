@@ -14,17 +14,9 @@ const GROUPS: { key: NumericFilterMeta['group']; label: string }[] = [
 export function FilterPanel({
   filters,
   onChange,
-  onReset,
-  signedIn,
-  watchlist,
-  onWatchlistChange,
 }: {
   filters: ScreenFilters;
   onChange: (patch: Partial<ScreenFilters>) => void;
-  onReset: () => void;
-  signedIn: boolean;
-  watchlist: string[];
-  onWatchlistChange: (symbols: string[]) => void;
 }) {
   const numField = (m: NumericFilterMeta) => {
     const value = filters[m.key] as number;
@@ -92,30 +84,16 @@ export function FilterPanel({
               </div>
             )}
             {g.key === 'capital' && (
-              <>
-                <div className="field">
-                  <label>Capital basis</label>
-                  <select
-                    value={filters.capitalBasis}
-                    onChange={(e) => onChange({ capitalBasis: e.target.value as ScreenFilters['capitalBasis'] })}
-                  >
-                    <option value="csp">Cash-secured</option>
-                    <option value="regt">Reg-T margin</option>
-                  </select>
-                </div>
-                <div className="field">
-                  <label>Max BP / position ($, blank = none)</label>
-                  <input
-                    type="number"
-                    min={500}
-                    step={500}
-                    value={filters.maxBuyingPowerPerPosition ?? ''}
-                    onChange={(e) =>
-                      onChange({ maxBuyingPowerPerPosition: e.target.value === '' ? null : Number(e.target.value) })
-                    }
-                  />
-                </div>
-              </>
+              <div className="field">
+                <label>Capital basis</label>
+                <select
+                  value={filters.capitalBasis}
+                  onChange={(e) => onChange({ capitalBasis: e.target.value as ScreenFilters['capitalBasis'] })}
+                >
+                  <option value="csp">Cash-secured</option>
+                  <option value="regt">Reg-T margin</option>
+                </select>
+              </div>
             )}
             {g.key === 'risk' && (
               <div className="field">
@@ -135,93 +113,6 @@ export function FilterPanel({
           </section>
         );
       })}
-
-      <section>
-        <h3>Watchlist</h3>
-        <div className="field check">
-          <input
-            id="watchlistOnly"
-            type="checkbox"
-            checked={filters.watchlistOnly}
-            disabled={!signedIn}
-            onChange={(e) => onChange({ watchlistOnly: e.target.checked })}
-          />
-          <label htmlFor="watchlistOnly">Watchlist only{!signedIn && ' (sign in)'}</label>
-        </div>
-        {signedIn && (
-          <div className="field">
-            <label>My watchlist ({watchlist.length})</label>
-            <input
-              type="text"
-              defaultValue={watchlist.join(',')}
-              placeholder="NVDA,AAPL,SPY"
-              onBlur={(e) =>
-                onWatchlistChange(
-                  e.target.value.split(',').map((s) => s.trim().toUpperCase()).filter(Boolean),
-                )
-              }
-            />
-          </div>
-        )}
-      </section>
-
-      <section>
-        <h3>Exclusions</h3>
-        <div className="field">
-          <label>Exclude symbols (comma-sep)</label>
-          <input
-            type="text"
-            defaultValue={filters.excludeSymbols.join(',')}
-            onBlur={(e) =>
-              onChange({
-                excludeSymbols: e.target.value
-                  .split(',')
-                  .map((s) => s.trim().toUpperCase())
-                  .filter(Boolean),
-              })
-            }
-          />
-        </div>
-        {(
-          [
-            ['hideBorrow', 'Hide borrow caution'],
-            ['hideDividend', 'Hide dividend caution'],
-            ['hideBelowParity', 'Hide below-parity'],
-            ['hideIvProxy', 'Hide IV-rank proxy'],
-          ] as const
-        ).map(([key, label]) => (
-          <div className="field check" key={key}>
-            <input
-              id={key}
-              type="checkbox"
-              checked={filters[key]}
-              onChange={(e) => onChange({ [key]: e.target.checked } as Partial<ScreenFilters>)}
-            />
-            <label htmlFor={key}>{label}</label>
-          </div>
-        ))}
-      </section>
-
-      <section>
-        <h3>Display</h3>
-        <div className="field">
-          <label>Columns</label>
-          <select
-            value={filters.columns}
-            onChange={(e) => onChange({ columns: e.target.value as ScreenFilters['columns'] })}
-          >
-            <option value="essentials">Essentials</option>
-            <option value="greeks">Greeks</option>
-            <option value="risk">Risk</option>
-            <option value="returns">Returns</option>
-            <option value="all">All</option>
-          </select>
-        </div>
-      </section>
-
-      <button className="reset" onClick={onReset}>
-        Reset all filters
-      </button>
     </div>
   );
 }

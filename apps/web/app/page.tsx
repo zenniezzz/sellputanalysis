@@ -35,7 +35,6 @@ export default async function Page({
   return (
     <CandidatesView
       user={user ? { email: user.email ?? null } : null}
-      watchlist={ctx.watchlist ?? []}
       initial={{
         meta: snap.meta,
         run: snap.run,

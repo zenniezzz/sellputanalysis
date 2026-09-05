@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { DEFAULT_FILTERS, filtersToQuery, type ScreenFilters, type SortKey } from '@pss/screen';
+import { filtersToQuery, type ScreenFilters, type SortKey } from '@pss/screen';
 import type { ScreenResponse } from '../lib/types';
 import { CandidatesTable } from './CandidatesTable';
 import { FilterPanel } from './FilterPanel';
@@ -13,17 +13,14 @@ import { WhyNotHere } from './WhyNotHere';
 export function CandidatesView({
   initial,
   user,
-  watchlist: initialWatchlist,
 }: {
   initial: ScreenResponse;
   user: { email: string | null } | null;
-  watchlist: string[];
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const [data, setData] = useState<ScreenResponse>(initial);
   const [filters, setFilters] = useState<ScreenFilters>(initial.filters);
-  const [watchlist, setWatchlist] = useState<string[]>(initialWatchlist);
   const [highlightedOcc, setHighlightedOcc] = useState<string | null>(null);
   const [expandedOcc, setExpandedOcc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -44,7 +41,6 @@ export function CandidatesView({
         .then((json: ScreenResponse) => {
           setData(json);
           setFilters(json.filters);
-          setWatchlist(json.watchlist);
         })
         .catch((e) => {
           if ((e as Error).name !== 'AbortError') console.error(e);
@@ -68,22 +64,6 @@ export function CandidatesView({
     (key: SortKey) => {
       const dir = filters.sort === key && filters.sortDir === 'desc' ? 'asc' : 'desc';
       run({ ...filters, sort: key, sortDir: dir });
-    },
-    [filters, run],
-  );
-
-  const saveWatchlist = useCallback(
-    async (symbols: string[]) => {
-      const res = await fetch('/api/watchlist', {
-        method: 'PUT',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ symbols }),
-      });
-      const json = (await res.json()) as { symbols?: string[] };
-      if (json.symbols) {
-        setWatchlist(json.symbols);
-        run(filters);
-      }
     },
     [filters, run],
   );
@@ -125,14 +105,7 @@ export function CandidatesView({
 
       <div className="layout">
         <aside className="panel filters">
-          <FilterPanel
-            filters={filters}
-            onChange={update}
-            onReset={() => run(DEFAULT_FILTERS)}
-            signedIn={!!user}
-            watchlist={watchlist}
-            onWatchlistChange={saveWatchlist}
-          />
+          <FilterPanel filters={filters} onChange={update} />
         </aside>
 
         <main id="results">
