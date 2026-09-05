@@ -66,6 +66,7 @@ const SNAPSHOT_SCHEMA_SQL = `
     dte               integer not null,
     spot              numeric(18,6) not null,
     spot_adj          numeric(18,6) not null,
+    daily_change_pct  numeric(9,6),
     bid               numeric(18,6),
     ask               numeric(18,6),
     mid               numeric(18,6) not null,
@@ -184,7 +185,7 @@ export class PgSnapshotStore implements SnapshotStore {
     await this.db.query(
       `insert into snapshot_row (
          snapshot_id, snapshot_day, occ_symbol, symbol, expiration, strike, multiplier, dte,
-         spot, spot_adj, bid, ask, mid, last, volume, open_interest, quote_as_of,
+         spot, spot_adj, daily_change_pct, bid, ask, mid, last, volume, open_interest, quote_as_of,
          entry_credit, entry_credit_100, mid_credit, slippage_k,
          iv, iv_vs_fitted, iv_rank, iv_pctile, put_skew_25d,
          delta, gamma, theta_day, daily_decay, vega,
@@ -193,10 +194,10 @@ export class PgSnapshotStore implements SnapshotStore {
          csp_capital_100, regt_capital_100, ann_roc, capital_basis,
          ev_100, max_loss_100, ev_to_maxloss, credit_to_maxloss, sigma_f, vrp_haircut, mu,
          score, score_components, model_caution, assignment_watch, is_candidate, excluded_reason)
-       values (${range(58)})`,
+       values (${range(59)})`,
       [
         snapshotId, snapshotDay, r.occSymbol, r.symbol, r.expiration, r.strike, r.multiplier, r.dte,
-        r.spot, r.spotAdj, r.bid, r.ask, r.mid, r.last, r.volume, r.openInterest, r.quoteAsOf,
+        r.spot, r.spotAdj, r.dailyChangePct, r.bid, r.ask, r.mid, r.last, r.volume, r.openInterest, r.quoteAsOf,
         r.entryCredit, r.entryCredit100, r.midCredit, r.slippageK,
         r.iv, r.ivVsFitted, r.ivRank, r.ivPctile, r.putSkew25d,
         r.delta, r.gamma, r.thetaDay, r.dailyDecay, r.vega,
@@ -324,6 +325,7 @@ function dbRowToSnapshotRow(r: Record<string, unknown>): SnapshotRow {
     dte: num(r['dte']),
     spot: num(r['spot']),
     spotAdj: num(r['spot_adj']),
+    dailyChangePct: numOrNull(r['daily_change_pct']),
     bid: num(r['bid']),
     ask: num(r['ask']),
     mid: num(r['mid']),

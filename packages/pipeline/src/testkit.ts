@@ -18,6 +18,7 @@ export interface MockNameSpec {
   settlement?: 'physical' | 'cash';
   hv20?: number | null;
   hv252?: number | null;
+  dailyChangePct?: number | null;
   /** Force this name's chain fetch to fail (to exercise degraded snapshots). */
   fail?: boolean;
 }
@@ -60,6 +61,7 @@ export class MockMarketData implements MarketData {
       name: symbol,
       spot: s.spot,
       spotAsOf: this.opts.now.toISOString(),
+      dailyChangePct: s.dailyChangePct ?? null,
       dividends: [],
       hv20: s.hv20 ?? 0.28,
       hv252: s.hv252 ?? 0.3,

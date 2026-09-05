@@ -49,6 +49,8 @@ interface CboePayload {
     symbol: string;
     current_price?: number;
     close?: number;
+    /** CBOE's own day-over-day % change, already in percent units (0.83 = +0.83%) — not derived from current_price/prev_day_close, which can disagree slightly on a delayed/off-hours feed. */
+    price_change_percent?: number;
     options?: CboeRawOption[];
   };
 }
@@ -60,6 +62,7 @@ interface LoadedPayload {
     symbol: string;
     current_price: number;
     close: number;
+    priceChangePercent: number | null;
     options: CboeRawOption[];
   };
 }
@@ -129,6 +132,7 @@ export class CboeAdapter implements MarketData {
         symbol: d.symbol,
         current_price: d.current_price,
         close: d.close ?? d.current_price,
+        priceChangePercent: d.price_change_percent ?? null,
         options: d.options,
       },
     };
@@ -147,6 +151,7 @@ export class CboeAdapter implements MarketData {
       name: clean,
       spot: d.current_price,
       spotAsOf: r.value.timestamp,
+      dailyChangePct: d.priceChangePercent,
       dividends: [],
       hv20: null,
       hv252: null,

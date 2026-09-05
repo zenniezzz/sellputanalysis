@@ -7,6 +7,7 @@ const FIXTURE = {
     symbol: 'AAPL',
     current_price: 227.5,
     close: 226.9,
+    price_change_percent: 0.83,
     options: [
       { option: 'AAPL261016P00210000', bid: 3.1, ask: 3.3, bid_size: 40, ask_size: 55, last_trade_price: 3.2, volume: 1200, open_interest: 8400, iv: 0.271, delta: -0.28, gamma: 0.012, theta: -0.06, vega: 0.19 },
       { option: 'AAPL261016P00200000', bid: 1.8, ask: 1.95, bid_size: 12, ask_size: 20, last_trade_price: 1.9, volume: 640, open_interest: 5100, iv: 0.30, delta: -0.19, gamma: 0.010, theta: -0.05, vega: 0.16 },
@@ -31,7 +32,15 @@ describe('CboeAdapter', () => {
       expect(r.value.spot).toBe(227.5);
       expect(r.value.settlement).toBe('physical');
       expect(r.value.hv20).toBeNull();
+      expect(r.value.dailyChangePct).toBe(0.83);
     }
+  });
+
+  it('getUnderlying falls back to null dailyChangePct when the provider omits it', async () => {
+    const { price_change_percent, ...dataWithoutChange } = FIXTURE.data;
+    const a = new CboeAdapter({ fetchImpl: fakeFetch({ ...FIXTURE, data: dataWithoutChange }) });
+    const r = await a.getUnderlying('AAPL');
+    expect(r.ok && r.value.dailyChangePct).toBeNull();
   });
 
   it('getExpirations lists distinct sorted dates', async () => {

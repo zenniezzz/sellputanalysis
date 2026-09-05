@@ -38,6 +38,8 @@ export interface Underlying {
   name: string;
   spot: number;
   spotAsOf: Iso8601;
+  /** Day-over-day % change (e.g. 0.83 = +0.83%), as reported by the provider. Null if not given. */
+  dailyChangePct: number | null;
   dividends: DividendEvent[];
   hv20: number | null;
   hv252: number | null;

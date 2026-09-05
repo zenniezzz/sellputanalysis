@@ -60,6 +60,7 @@ function baseRow(o: OptionQuote, ctx: PriceContext, mid: number): SnapshotRow {
     dte: ctx.dte,
     spot: ctx.spot,
     spotAdj: ctx.spotAdj,
+    dailyChangePct: ctx.underlying.dailyChangePct,
     bid: o.bid,
     ask: o.ask,
     mid,

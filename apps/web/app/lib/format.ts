@@ -3,6 +3,14 @@ import { scoreOutOf10 } from '@pss/options';
 export const pct = (x: number | null | undefined, dp = 1): string =>
   x == null || !Number.isFinite(x) ? '—' : `${(x * 100).toFixed(dp)}%`;
 
+/**
+ * A value that's *already* in percent units (e.g. the provider's own
+ * day-over-day change, 0.83 meaning "+0.83%") — unlike `pct`, does not
+ * multiply by 100. Signed, for a daily-change-style column.
+ */
+export const changePct = (x: number | null | undefined, dp = 2): string =>
+  x == null || !Number.isFinite(x) ? '—' : `${x > 0 ? '+' : ''}${x.toFixed(dp)}%`;
+
 export const num = (x: number | null | undefined, dp = 2): string =>
   x == null || !Number.isFinite(x) ? '—' : x.toFixed(dp);
 

@@ -119,6 +119,7 @@ function row(over: Partial<SnapshotRow>): SnapshotRow {
     dte: 35,
     spot: 100,
     spotAdj: 100,
+    dailyChangePct: null,
     bid: 1,
     ask: 1.1,
     mid: 1.05,

@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { COLUMN_PRESETS, type ColumnPreset, type ScreenedRow, type SortDir, type SortKey } from '@pss/screen';
-import { num, pct, score10, usd, usd0, int } from '../lib/format';
+import { changePct, num, pct, score10, usd, usd0, int } from '../lib/format';
 import { GLOSSARY_BY_ID } from '../lib/glossary';
 import { RowDetail } from './RowDetail';
 import { useCompareTray } from './CompareTray';
@@ -34,6 +34,15 @@ interface Col {
 const COLS: Record<SortKey, Col> = {
   score: { key: 'score', label: 'score /10', render: (r) => score10(r.score), cls: (r) => signCls(r.score) },
   symbol: { key: 'symbol', label: 'sym', render: (r) => r.symbol, cls: () => 'sym' },
+  spot: { key: 'spot', label: 'spot', render: (r) => usd(r.spot) },
+  expiration: { key: 'expiration', label: 'exp', render: (r) => r.expiration, cls: () => 'sym' },
+  strike: { key: 'strike', label: 'strike', render: (r) => `${num(r.strike, r.strike % 1 === 0 ? 0 : 2)}P` },
+  dailyChangePct: {
+    key: 'dailyChangePct',
+    label: 'day %',
+    render: (r) => changePct(r.dailyChangePct),
+    cls: (r) => signCls(r.dailyChangePct),
+  },
   dte: { key: 'dte', label: 'dte', render: (r) => String(r.dte) },
   entryCredit: { key: 'entryCredit', label: 'credit', render: (r) => usd(r.entryCredit) },
   spreadPct: { key: 'spreadPct', label: 'spr%', render: (r) => pct(r.spreadPct) },
@@ -143,7 +152,6 @@ export function CandidatesTable({
                 </th>
               );
             })}
-            <th>exp / K</th>
           </tr>
         </thead>
         <tbody>
@@ -174,23 +182,21 @@ export function CandidatesTable({
                   </td>
                   {cols.map((c) => (
                     <td key={c.key} className={`${c.key === 'symbol' ? 'sym' : ''} ${c.cls?.(r) ?? ''}`}>
+                      {c.key === 'symbol' && (expanded ? '▾ ' : '▸ ')}
                       {c.render(r)}
+                      {c.key === 'symbol' && r.assignmentWatch && <span className="chip warn">assign</span>}
+                      {c.key === 'symbol' &&
+                        flags.map((f) => (
+                          <span key={f} className="chip">
+                            {FLAG_LABEL[f] ?? f}
+                          </span>
+                        ))}
                     </td>
                   ))}
-                  <td className="sym">
-                    {expanded ? '▾ ' : '▸ '}
-                    {r.expiration} {r.strike}P{' '}
-                    {r.assignmentWatch && <span className="chip warn">assign</span>}
-                    {flags.map((f) => (
-                      <span key={f} className="chip">
-                        {FLAG_LABEL[f] ?? f}
-                      </span>
-                    ))}
-                  </td>
                 </tr>
                 {expanded && (
                   <tr>
-                    <td colSpan={cols.length + 2} style={{ padding: 0, textAlign: 'left' }}>
+                    <td colSpan={cols.length + 1} style={{ padding: 0, textAlign: 'left' }}>
                       <RowDetail row={r} snapshotRunId={snapshotRunId} signedIn={signedIn} />
                     </td>
                   </tr>

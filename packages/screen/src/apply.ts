@@ -133,6 +133,8 @@ function sortValue(r: ScreenedRow, key: SortKey): number | string {
   switch (key) {
     case 'symbol':
       return r.symbol;
+    case 'expiration':
+      return r.expiration;
     case 'displayCapital':
       return r.displayCapital100 ?? Number.POSITIVE_INFINITY;
     case 'annRoc':

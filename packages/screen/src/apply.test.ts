@@ -50,6 +50,20 @@ describe('applyScreen', () => {
     expect(res.counts.priced).toBeGreaterThan(res.counts.visible);
   });
 
+  it('sorts by expiration (string), spot, and dailyChangePct (new SortKeys)', () => {
+    const base = { ...DEFAULT_FILTERS, minAnnRoc: 0, minIvRankOrPctile: 0, deltaLo: 0.05, deltaHi: 0.5, maxUnderlyingPrice: 1000 };
+    const byExp = applyScreen(rows, { ...base, sort: 'expiration', sortDir: 'asc' }).visible;
+    for (let i = 1; i < byExp.length; i++) {
+      expect(byExp[i]!.expiration.localeCompare(byExp[i - 1]!.expiration)).toBeGreaterThanOrEqual(0);
+    }
+    const bySpot = applyScreen(rows, { ...base, sort: 'spot', sortDir: 'desc' }).visible;
+    for (let i = 1; i < bySpot.length; i++) {
+      expect(bySpot[i]!.spot).toBeLessThanOrEqual(bySpot[i - 1]!.spot);
+    }
+    // no error/throw sorting on the nullable dailyChangePct either
+    expect(() => applyScreen(rows, { ...base, sort: 'dailyChangePct', sortDir: 'desc' })).not.toThrow();
+  });
+
   it('relaxing a filter admits more rows (and is reversible)', () => {
     const tight = applyScreen(rows, { ...DEFAULT_FILTERS, deltaLo: 0.24, deltaHi: 0.26 });
     const loose = applyScreen(rows, { ...DEFAULT_FILTERS, deltaLo: 0.05, deltaHi: 0.5 });

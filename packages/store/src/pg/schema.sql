@@ -34,6 +34,7 @@ create table if not exists snapshot_row (
   dte               integer not null,
   spot              numeric(18,6) not null,
   spot_adj          numeric(18,6) not null,
+  daily_change_pct  numeric(9,6),
   bid               numeric(18,6),
   ask               numeric(18,6),
   mid               numeric(18,6) not null,

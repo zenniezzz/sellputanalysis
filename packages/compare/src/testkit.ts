@@ -22,6 +22,7 @@ export function mkRow(over: RowOverride = {}): SnapshotRow {
     dte: 35,
     spot: 100,
     spotAdj: 100,
+    dailyChangePct: 0.5,
     bid: 1.9,
     ask: 2.1,
     mid: 2,

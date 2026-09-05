@@ -71,6 +71,8 @@ export interface SnapshotRow {
   dte: number;
   spot: number;
   spotAdj: number;
+  /** Day-over-day % change for the underlying (0.83 = +0.83%), as reported by the provider. */
+  dailyChangePct: number | null;
   bid: number;
   ask: number;
   mid: number;

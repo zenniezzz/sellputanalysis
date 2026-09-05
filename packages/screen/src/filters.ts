@@ -132,15 +132,23 @@ export type SortKey =
   | 'volume'
   | 'entryCredit'
   | 'displayCapital'
-  | 'symbol';
+  | 'symbol'
+  | 'spot'
+  | 'expiration'
+  | 'strike'
+  | 'dailyChangePct';
 
 export const COLUMN_PRESETS: Record<ColumnPreset, SortKey[]> = {
-  essentials: ['score', 'symbol', 'dte', 'entryCredit', 'spreadPct', 'iv', 'ivRank', 'putSkew25d', 'ivVsFitted', 'delta', 'decayYield', 'pop', 'evToMaxloss', 'annRoc'],
+  // spot/expiration/strike/dailyChangePct sit right after symbol on purpose
+  // (identify-the-contract info first); ivRank/putSkew25d/ivVsFitted/evToMaxloss
+  // dropped from this default view (still available via the "all" preset).
+  essentials: ['score', 'symbol', 'spot', 'expiration', 'strike', 'dailyChangePct', 'dte', 'entryCredit', 'spreadPct', 'iv', 'delta', 'decayYield', 'pop', 'annRoc'],
   greeks: ['score', 'symbol', 'dte', 'iv', 'delta', 'decayYield', 'ivVsFitted'],
   risk: ['score', 'symbol', 'dte', 'delta', 'probItm', 'pop', 'evToMaxloss', 'displayCapital'],
   returns: ['score', 'symbol', 'dte', 'entryCredit', 'decayYield', 'annRoc', 'evToMaxloss'],
   all: [
-    'score', 'symbol', 'dte', 'entryCredit', 'spreadPct', 'iv', 'ivRank', 'putSkew25d', 'ivVsFitted',
-    'delta', 'decayYield', 'probItm', 'pop', 'evToMaxloss', 'annRoc', 'displayCapital', 'openInterest', 'volume',
+    'score', 'symbol', 'spot', 'expiration', 'strike', 'dailyChangePct', 'dte', 'entryCredit', 'spreadPct',
+    'iv', 'ivRank', 'putSkew25d', 'ivVsFitted', 'delta', 'decayYield', 'probItm', 'pop', 'evToMaxloss',
+    'annRoc', 'displayCapital', 'openInterest', 'volume',
   ],
 };
