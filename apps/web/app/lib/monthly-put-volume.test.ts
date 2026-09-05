@@ -9,6 +9,7 @@ function row(overrides: Partial<UniverseRow> & { symbol: string; inWindowPutVolu
     settlement: 'physical',
     inWindowCallVolume: 0,
     putCallRatio: null,
+    dailyChangePct: null,
     sigma30: null,
     ivRank: null,
     ivPctile: null,

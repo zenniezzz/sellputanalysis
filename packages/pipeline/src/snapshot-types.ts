@@ -155,6 +155,7 @@ export interface UniverseRow {
   inWindowPutVolume: number;
   inWindowCallVolume: number;
   putCallRatio: number | null;
+  dailyChangePct: number | null;
   sigma30: number | null;
   ivRank: number | null;
   ivPctile: number | null;

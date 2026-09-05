@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import type { UniverseRow } from '@pss/pipeline';
-import { int, num } from '../lib/format';
+import { changePct, int, num } from '../lib/format';
 
 const N = 25;
 
@@ -76,9 +76,8 @@ export function TopPutVolume({
               <th className="sym">sym</th>
               <th>spot</th>
               <th>put vol</th>
-              <th>p/c</th>
-              <th>cands</th>
-              <th className="sym">sector</th>
+              <th>call vol</th>
+              <th>day %</th>
             </tr>
           </thead>
           <tbody>
@@ -93,9 +92,8 @@ export function TopPutVolume({
                 <td className="sym">{u.symbol}</td>
                 <td>${num(u.spot, 2)}</td>
                 <td>{int(u.inWindowPutVolume)}</td>
-                <td>{num(u.putCallRatio, 2)}</td>
-                <td>{u.candidateCount}</td>
-                <td className="sym">{u.sector ?? '—'}</td>
+                <td>{int(u.inWindowCallVolume)}</td>
+                <td className={signCls(u.dailyChangePct)}>{changePct(u.dailyChangePct)}</td>
               </tr>
             ))}
           </tbody>
@@ -103,4 +101,9 @@ export function TopPutVolume({
       </div>
     </div>
   );
+}
+
+function signCls(x: number | null): string {
+  if (x == null) return '';
+  return x > 0 ? 'pos' : x < 0 ? 'neg' : '';
 }

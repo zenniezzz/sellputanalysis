@@ -314,6 +314,7 @@ export async function runSnapshot(config: RunSnapshotConfig): Promise<RunSnapsho
       inWindowPutVolume: ru.name.inWindowPutVolume,
       inWindowCallVolume: ru.callVolume,
       putCallRatio: ru.callVolume > 0 ? ru.name.inWindowPutVolume / ru.callVolume : null,
+      dailyChangePct: u.dailyChangePct,
       sigma30: Number.isFinite(ru.surface.sigma30) ? ru.surface.sigma30 : null,
       ivRank: ru.surface.ivRank,
       ivPctile: ru.surface.ivPctile,
