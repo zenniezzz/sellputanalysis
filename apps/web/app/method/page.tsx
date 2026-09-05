@@ -35,6 +35,35 @@ export default function MethodPage() {
         predicts the future.
       </p>
 
+      <h2 style={{ ...H, marginTop: 0 }}>Composite score</h2>
+      <p>A weighted sum of three inputs — this is the whole rule set:</p>
+      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
+        <thead>
+          <tr>
+            <th style={TH}>Metric</th>
+            <th style={TH}>Weight</th>
+            <th style={TH}>Direction</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style={TD}>Annualized ROC</td>
+            <td style={TD}>+1/3</td>
+            <td style={TD}>higher is better</td>
+          </tr>
+          <tr>
+            <td style={TD}>IV vs. fitted (residual)</td>
+            <td style={TD}>+1/3</td>
+            <td style={TD}>higher is better</td>
+          </tr>
+          <tr>
+            <td style={TD}>|Δ| distance from 0.15</td>
+            <td style={TD}>−1/3</td>
+            <td style={TD}>closer is better</td>
+          </tr>
+        </tbody>
+      </table>
+
       <h2 style={H}>Default screening rules</h2>
       <p>
         The screen loads with these defaults — every one of them is adjustable live in the sidebar
@@ -97,35 +126,6 @@ export default function MethodPage() {
         interest ≥ {DEFAULT_GATE.minOpenInterest}, volume ≥ {DEFAULT_GATE.minVolume}, and underlying
         price ≥ ${DEFAULT_GATE.minUnderlyingPrice}.
       </p>
-
-      <h2 style={H}>Composite score</h2>
-      <p>A weighted sum of three inputs — this is the whole rule set:</p>
-      <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>
-        <thead>
-          <tr>
-            <th style={TH}>Metric</th>
-            <th style={TH}>Weight</th>
-            <th style={TH}>Direction</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            <td style={TD}>Annualized ROC</td>
-            <td style={TD}>+1/3</td>
-            <td style={TD}>higher is better</td>
-          </tr>
-          <tr>
-            <td style={TD}>IV vs. fitted (residual)</td>
-            <td style={TD}>+1/3</td>
-            <td style={TD}>higher is better</td>
-          </tr>
-          <tr>
-            <td style={TD}>|Δ| distance from 0.15</td>
-            <td style={TD}>−1/3</td>
-            <td style={TD}>closer is better</td>
-          </tr>
-        </tbody>
-      </table>
 
       <h2 style={H}>Data</h2>
       <p>
