@@ -16,6 +16,6 @@
     "@pss/pipeline": "*",
     "@pss/store": "*",
     "@pss/tracker": "*",
-    "pg": "^8.12.0"
+    "pg": "^8.23.1"
   }
 }
